@@ -1,0 +1,148 @@
+#
+# Copyright 2015 IBM
+#
+# Eclipse Public License - v 1.0
+#
+#THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE PUBLIC
+#LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION OF THE PROGRAM
+#CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
+swagger: '2.0'
+info:
+  title: Message Hub topic management API
+  version: "v1"
+
+schemes:
+  - https
+basePath: /admin
+consumes:
+  - application/vnd.kafka.v1+json
+  - application/vnd.kafka+json
+  - application/json
+produces:
+  - application/vnd.kafka.v1+json
+  - application/json
+
+securityDefinitions:
+  X-Auth-Token:
+    type: apiKey
+    name: X-Auth-Token
+    in: header
+    description: Requires a valid API key
+
+paths:
+  # =====================================
+  # APIs for managing topics
+  # =====================================
+  /topics:
+    get:
+      summary: Get a list of topics
+      security:
+        - X-Auth-Token: []
+      responses:
+        200:
+          description: List of topic names
+          schema:
+            type: array
+            items: 
+              $ref: '#/definitions/TopicInfo'
+        404:
+          description: Not found
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        422:
+          description: Unprocessable entity 
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        500:
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+    post:
+      summary: Create a topic
+      security:
+        - X-Auth-Token: []
+      parameters:
+        - name: TopicCreateParam
+          description: Configurable paramaters for topic creation
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/TopicCreateParam'
+      responses:
+        '202':
+          description: Topic creation pending
+          headers:
+            Location:
+              type: string
+              description: Location (resource URI) for the created topic      
+        '422':
+          description: Unprocessable entity 
+          schema:
+             $ref: '#/definitions/ErrorInfo'
+        '500':
+          description: Internal server error
+          schema:
+             $ref: '#/definitions/ErrorInfo'
+
+  /topics/{name}:
+    delete:
+      summary: Delete a topic
+      security:
+        - X-Auth-Token: []
+      parameters:
+        - name: name
+          in: path
+          description: The name of the topic to be deleted
+          required: true
+          type: string
+      responses:
+        '202':
+          description: Topic deletion pending
+        '422':
+          description: Topic already marked for deletion
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '500':
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+      
+definitions:
+
+  TopicInfo:
+    properties:
+      name: 
+        type: string
+        description: the name of the topic
+      markedForDeletion:
+        type: boolean
+        description: whether or not the topic has been marked for deletion
+
+  ErrorInfo:
+    required:
+      - errorCode
+    properties:
+      errorCode:
+        type: integer
+        description: Detailed error code qualifying response status code
+      message:
+        type: string
+        description: English language error message
+    
+  TopicCreateParam:
+    required:
+       - name
+    properties:
+      name:
+        type: string
+        description: Name of the topic
+      configs:
+        type: object
+        description: Per-topic configuration override, initially do not allow non-null options
+      partitions:
+        type: integer
+        description: Number of partitions for this topic, default 1, initially no override allowed
+      replicationFactor:
+        type: integer
+        description: Replication factor for this topic, default 3, initially no override allowed
