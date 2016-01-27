@@ -43,14 +43,14 @@ paths:
           description: List of topic names
           schema:
             type: array
-            items: 
+            items:
               $ref: '#/definitions/TopicInfo'
         404:
           description: Not found
           schema:
             $ref: '#/definitions/ErrorInfo'
         422:
-          description: Unprocessable entity 
+          description: Unprocessable entity
           schema:
             $ref: '#/definitions/ErrorInfo'
         500:
@@ -75,9 +75,9 @@ paths:
           headers:
             Location:
               type: string
-              description: Location (resource URI) for the created topic      
+              description: Location (resource URI) for the created topic
         '422':
-          description: Unprocessable entity 
+          description: Unprocessable entity
           schema:
              $ref: '#/definitions/ErrorInfo'
         '500':
@@ -107,17 +107,20 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/ErrorInfo'
-      
+
 definitions:
 
   TopicInfo:
     properties:
-      name: 
+      name:
         type: string
         description: the name of the topic
       markedForDeletion:
         type: boolean
         description: whether or not the topic has been marked for deletion
+      partitions:
+        type: integer
+        description: Number of partitions for this topic
 
   ErrorInfo:
     required:
@@ -129,7 +132,7 @@ definitions:
       message:
         type: string
         description: English language error message
-    
+
   TopicCreateParam:
     required:
        - name
@@ -142,7 +145,7 @@ definitions:
         description: Per-topic configuration override, initially do not allow non-null options
       partitions:
         type: integer
-        description: Number of partitions for this topic, default 1, initially no override allowed
+        description: Number of partitions for this topic, default 1
       replicationFactor:
         type: integer
         description: Replication factor for this topic, default 3, initially no override allowed
