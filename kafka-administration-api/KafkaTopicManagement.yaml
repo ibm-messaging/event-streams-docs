@@ -143,6 +143,10 @@ definitions:
       configs:
         type: object
         description: Per-topic configuration override, initially do not allow non-null options
+        properties:
+         retentionMs:
+          type: integer
+          description: The amount of time messages are retained before deleted, which is counted in milliseconds (in multiples of hours). This is set per topic. Default is 24 hours. Minimum is 1 hour. Maximum is 30 days.
       partitions:
         type: integer
         description: Number of partitions for this topic, default 1
