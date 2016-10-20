@@ -129,7 +129,7 @@ definitions:
       errorCode:
         type: integer
         description: Detailed error code qualifying response status code
-      message:
+      errorMessage:
         type: string
         description: English language error message
 
