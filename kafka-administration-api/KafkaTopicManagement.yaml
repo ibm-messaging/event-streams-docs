@@ -6,6 +6,12 @@
 #THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE PUBLIC
 #LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION OF THE PROGRAM
 #CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
+
+#########################################################################
+# Note that this version of the swagger document has been superseded by #
+# the swagger API definition in the ../admin-rest-api directory.        #
+#########################################################################
+
 swagger: '2.0'
 info:
   title: Message Hub topic management API
