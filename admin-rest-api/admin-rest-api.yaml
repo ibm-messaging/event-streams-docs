@@ -1,0 +1,674 @@
+#
+# Copyright 2015 IBM
+#
+# Eclipse Public License - v 1.0
+#
+#THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE PUBLIC
+#LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION OF THE PROGRAM
+#CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
+
+swagger: '2.0'
+info:
+  title: Message Hub Administration REST API
+  version: "1"
+
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+
+securityDefinitions:
+  X-Auth-Token:
+    type: apiKey
+    name: X-Auth-Token
+    in: header
+    description: >
+      A valid API key is required to access this API.  API keys can be allocated
+      via the IBM Bluemix interface, and are associated with an instance of the
+      Message Hub service. API key values must be supplied on every REST request
+      using the `X-Auth-Token` HTTP header. Failure to specify a valid API key
+      will result in the REST request failing with a 401 (Unauthorized) status
+      code.
+tags:
+  - name: Bridge
+    description: >
+      Methods that relate to administering bridges.
+  - name: Kafka Topic
+    description: >
+      Methods that relate to administering Kafka topics.
+  - name: Technology Preview
+    description: >
+      Methods tagged with the _Technology Preview_ tag are under active
+      development and may be subject to change.
+
+paths:
+  # =====================================
+  # APIs for managing topics
+  # =====================================
+  /admin/topics:
+    get:
+      summary: List Kafka topics.
+      description: >
+        Returns a list containing information about all of the Kafka topics that
+        are defined for an instance of the Message Hub service. If there are
+        currently no topics defined then an empty list is returned.
+      tags:
+        - Kafka Topic
+      security:
+        - X-Auth-Token: []
+      responses:
+        '200':
+          description: >
+            Success.  A list of topic information objects is returned in the
+            response body.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/TopicInfo'
+        '401':
+          description: >
+            Either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        422:
+          description: >
+            The request contained syntactically valid JSON, but could not be
+            completed. For more information, consult the value of the
+            `errorMessage` property in the JSON object return as the response
+            body.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+    post:
+      summary: Create a Kafka topic.
+      description: >
+        Creates a new Kafka topic using the values supplied in the request body.
+      tags:
+        - Kafka Topic
+      security:
+        - X-Auth-Token: []
+      parameters:
+        - name: TopicCreateParam
+          description: >
+            A JSON object containing configuration parameters used to create the
+            Kafka topic.
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/TopicCreateParam'
+      responses:
+        '202':
+          description: >
+            Topic creation request accepted. Topic creation occurs
+            asynchronously, and therefore invoking the list topics REST endpoint
+            may not immediately show newly created topics.
+          headers:
+            Location:
+              type: string
+              description: Location (resource URI) for the created topic.
+        '401':
+          description: >
+            Either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '422':
+          description: >
+            The request contained syntactically valid JSON, but could not be
+            completed. For more information, consult the value of the
+            `errorMessage` property in the JSON object return as the response
+            body.
+          schema:
+             $ref: '#/definitions/ErrorInfo'
+
+  /admin/topics/{name}:
+    delete:
+      summary: Delete a topic
+      description: Delete a Kafka topic based on the topic's name.
+      tags:
+        - Kafka Topic
+      security:
+        - X-Auth-Token: []
+      parameters:
+        - name: name
+          in: path
+          description: The name of the topic to be deleted.
+          required: true
+          type: string
+      responses:
+        '202':
+          description: >
+            The Topic delete request accepted. The Kafka topic deletion process
+            occurs asynchronously. Duplicate deletion requests for a topic which
+            is in the process of being deleted will return this status code.
+            Requests to delete a non-existent topic will also return this status
+            code.
+        '401':
+          description: >
+            Either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '422':
+          description: The topic has already been marked for deletion.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+  # =====================================
+  # APIs for managing bridges
+  # =====================================
+  /admin/bridges:
+    get:
+      summary: Lists bridges
+      description: >
+        Lists the bridges that are currently defined for an instance of the
+        Message Hub service. If no bridges are defined then an empty list is
+        returned from this call.
+      tags:
+        - Bridge
+        - Technology Preview
+      security:
+        - X-Auth-Token: []
+      responses:
+        '200':
+          description: >
+            Success. A list of bridge information objects is returned in the
+            response body.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BridgeInfo'
+        '401':
+          description: >
+            Either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+    post:
+      summary: Creates a bridge
+      description: >
+        Creates a new instance of a Message Hub bridge.
+      tags:
+        - Bridge
+        - Technology Preview
+      parameters:
+        - name: ObjectStorageOutConfigParam
+          description: >
+            Configurable parameters for bridge creation.
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ObjectStorageOutConfigParam'
+
+      security:
+        - X-Auth-Token: []
+      responses:
+        '201':
+          description: The bridge was created.
+          headers:
+            Location:
+              type: string
+              description: Location (resource URI) for the created bridge
+        '400':
+          description: >
+            The JSON object describing the bridge to create is either
+            syntactically invalid, or does not contain one or more of the
+            required fields.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '401':
+          description: >
+            Either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '422':
+          description: >
+            Although the request was syntactically valid, it was not possible to
+            create the bridge. For more information, consult the value of the
+            `errorMessage` property in the JSON object return as the response
+            body.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '507':
+          description: >
+            The Message Hub service does not have sufficient resources to create
+            a new bridge at this time.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+  /admin/bridges/{name}:
+
+    get:
+      summary: Get information about a bridge.
+      tags:
+        - Bridge
+        - Technology Preview
+      description: >
+        Use the name of a bridge to retrieve information about the specific
+        bridge instance.
+      security:
+        - X-Auth-Token: []
+      parameters:
+        - name: name
+          in: path
+          description: The name of the bridge to retrieve information about.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Bridge information returned.
+          schema:
+            $ref: '#/definitions/BridgeInfo'
+        '401':
+          description: >
+            Either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '404':
+          description: No bridge exists with the specified bridge name.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+    delete:
+      summary: Delete a bridge.
+      tags:
+        - Bridge
+        - Technology Preview
+      description: >
+        Delete a specific instance of a bridge by specifying the name given to
+        the bridge when it was created.
+      security:
+        - X-Auth-Token: []
+      parameters:
+        - name: name
+          in: path
+          description: The name of the bridge to delete.
+          required: true
+          type: string
+      responses:
+        '204':
+          description: Bridge deleted.
+        '401':
+          description: >
+            Either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '404':
+          description: No bridge exists with the specified bridge name.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+    put:
+      summary: Update bridge parameters.
+      description: >
+        Replaces the parameters used to configure a bridge with a new set of
+        parameters. The bridge is automatically restarted to pick up the
+        changes.
+      tags:
+        - Bridge
+        - Technology Preview
+      security:
+        - X-Auth-Token: []
+      parameters:
+        - name: name
+          in: path
+          description: The name of the bridge to update.
+          required: true
+          type: string
+        - name: ObjectStorageOutConfigParam
+          description: >
+            A new set of configuration parameters to use when modifying an
+            existing instance of the bridge.
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ObjectStorageOutConfigParam'
+      responses:
+        '200':
+          description: Bridge updated with new parameters.
+        '400':
+          description: >
+            The JSON object describing the updates to the bridge is either
+            syntactically invalid, or does not contain one or more of the
+            required fields.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '401':
+          description: >
+            Either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '404':
+          description: No bridge exists with the specified bridge name.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '422':
+          description: >
+            Although the request was syntactically valid, it was not possible to
+            create the bridge. For more information, consult the value of the
+            `errorMessage` property in the JSON object return as the response
+            body.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+  /admin/bridges/{name}/pause:
+
+    post:
+      summary: Pause a bridge.
+      description: >
+        Suspend all processing done by a bridge. Pausing an already paused
+        bridge has no effect and returns a successful status code.
+      tags:
+        - Bridge
+        - Technology Preview
+      security:
+        - X-Auth-Token: []
+      parameters:
+        - name: name
+          in: path
+          description: The name of the bridge to pause.
+          required: true
+          type: string
+      responses:
+        '204':
+          description: The bridge is paused.
+        '401':
+          description: >
+            Either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '404':
+          description: No bridge exists with the specified bridge name.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+  /admin/bridges/{name}/resume:
+
+    post:
+      summary: Resume a bridge.
+      description: >
+        Resume the processing done by a bridge (reverse the effect of
+        pausing a bridge).  Resuming an already running bridge has no effect
+        and returns a successful status code.
+      tags:
+        - Bridge
+        - Technology Preview
+      security:
+        - X-Auth-Token: []
+      parameters:
+        - name: name
+          in: path
+          description: The name of the bridge to resume.
+          required: true
+          type: string
+      responses:
+        '204':
+          description: The bridge is no longer paused.
+        '401':
+          description: >
+            Either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '404':
+          description: No bridge exists with the specified bridge name.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+definitions:
+
+  TopicInfo:
+    required:
+      - name
+      - retentionMs
+      - markedForDeletion
+      - partitions
+    properties:
+      name:
+        type: string
+        description: The name of the Kafka topic.
+      retentionMs:
+        type: integer
+        description: >
+          The retention period for the topic (in milliseconds). Messages are
+          stored on the topic for this period of time, after which they are
+          deleted.
+      markedForDeletion:
+        type: boolean
+        description: >
+          Set to true when a request has been made to delete the topic, but the
+          deletion process has not yet completed. Kafka implements topic
+          deletion as an asynchronous process.
+      partitions:
+        type: integer
+        description: The number of Kafka partitions allocated to the topic.
+
+  ErrorInfo:
+    required:
+      - errorCode
+    properties:
+      errorCode:
+        type: integer
+        description: Detailed error code qualifying response status code.
+      errorMessage:
+        type: string
+        description: An English language description of the error.
+
+  TopicCreateParam:
+    required:
+       - name
+    properties:
+      name:
+        type: string
+        description: The name of the topic.
+      configs:
+        type: object
+        description: Topic configuration parameters.
+        properties:
+          retentionMs:
+            type: integer
+            description: >
+              The amount of time messages are retained before they are deleted,
+              which is counted in milliseconds (in multiples of hours). This is
+              set per topic. Default is 24 hours. Minimum is 1 hour. Maximum is
+              30 days.
+            default: 86400000   # 24 hours
+            minimum: 3600000    # 1 hour
+            maximum: 2592000000 # 30 days
+      partitions:
+        type: integer
+        description: >
+          The number of partitions to assign to the topic.
+        minimum: 1
+        maximum: 100
+        default: 1
+      replicationFactor:
+        type: integer
+        description: >
+          The replication factor for this topic. This must be set to the value
+          3.
+        default: 3
+        minimum: 3
+        maximum: 3
+
+  BridgeInfo:
+    required:
+      - configuration
+      - state
+    properties:
+      configuration:
+        $ref: '#/definitions/ObjectStorageOutConfigParam'
+      state:
+        required:
+          - value
+          - message
+        type: object
+        description: The runtime state of the bridge.
+        properties:
+          value:
+            type: string
+            description: An enumeration representing the state of the bridge.
+            enum:
+              - paused
+              - running
+              - unavailable
+          message:
+            type: string
+            description: >
+              An English language message providing details about the status of
+              the bridge.
+
+  ObjectStorageOutConfigParam:
+    required:
+      - name
+      - topic
+      - type
+      - configuration
+    properties:
+      name:
+        type: string
+        description: The name of the bridge.
+      topic:
+        type: string
+        description: >
+          The Kafka topic that the bridge will consume messages from.
+      type:
+        type: string
+        description: >
+          Type of bridge. Currently this must be the value `objectStorageOut`.
+        enum:
+          - objectStorageOut
+      configuration:
+        type: object
+        description: >
+          Configuration that is used to connect to the Bluemix Object Storage
+          service and also determine how the bridge converts Kafka messages into
+          Object Storage service files.
+        required:
+          - credentials
+          - container
+          - partitioning
+          - uploadDurationThresholdSeconds
+          - uploadSizeThresholdKB
+        properties:
+          credentials:
+            type: object
+            description: >
+              The credentials used to connect to the Object Storage service.
+            required:
+              - authUrl
+              - region
+              - password
+              - projectId
+              - userId
+            properties:
+              authUrl:
+                type: string
+                description: >
+                  The `auth_url` property from the Object Storage service
+                  credentials.
+              region:
+                type: string
+                description: >
+                  The `region` property from the Object Storage service
+                  credentials.
+              password:
+                type: string
+                description: >
+                  The `password` property from the Object Storage service
+                  credentials.
+              projectId:
+                type: string
+                description: >
+                  The `projectId` property from the Object Storage service
+                  credentials.
+              userId:
+                type: string
+                description: >
+                  The `userId` property from the Object Storage service
+                  credentials.
+          container:
+            type: string
+            description: >
+              The name of the Object Storage service container into which
+              this bridge will upload files.
+          uploadDurationThresholdSeconds:
+            type: integer
+            description: >
+              The maximum amount of time (in seconds) that this bridge will
+              cache data read from Kafka before it uploads it as a file to
+              the Object Storage service.
+            minimum: 10
+            maximum: 21600   # 6 hours
+          uploadSizeThresholdKB:
+            type: integer
+            description: >
+              The maximum amount of data (in kilobytes) that this bridge
+              will read from Kafka and cache before it uploads it as a file
+              to the Object Storage service.
+            minimum: 1
+            maximum: 1048576 # 1GB
+          inputFormat:
+            type: string
+            description: >
+              The data format for the contents of the Kafka messages.
+            enum:
+              - json
+          partitioning:
+            type: array
+            description: >
+              An ordered array of partitioning schemes. These determine how
+              Kafka message data is placed into Object Storage service files
+              as well as the file names used.
+            items:
+              $ref: '#/definitions/BasePartitioningType'
+
+  BasePartitioningType:
+    discriminator: type
+    required:
+      - type
+    properties:
+      type:
+        type: string
+        description: >
+          The type of partitioning scheme to use. `dateIso8601` uses a value
+          parsed from the JSON in the source Kafka messages to determine the
+          Object Storage file name. `kafkaOffset` uses the offset within the
+          Kafka partition to determine the file name.
+        enum:
+          - dateIso8601
+          - kafkaOffset
+
+  DateIso8601PartitioningType:
+    allOf:
+      - $ref: '#/definitions/BasePartitioningType'
+      - type: object
+        required:
+          - propertyName
+        properties:
+          propertyName:
+            type: string
+            description: >
+              The name of a JSON property, present in the source Kafka messages,
+              that contains an ISO 8601 date. This date value will be used to
+              partition message data into Object Storage files.
+
