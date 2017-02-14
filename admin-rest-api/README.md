@@ -246,7 +246,7 @@ type of bridge being created.  The following types of bridge can be created:
 
 #### Creating an Object Storage bridge
 
-The Object Storage bridge allows you to store data from Kakfa messages in an
+The Object Storage bridge allows you to store data from Kafka messages in an
 instance of the
 [Object Storage service](https://console.ng.bluemix.net/catalog/services/object-storage/).
 You can use the Object Storage bridge to:
@@ -432,7 +432,7 @@ REQUEST
 
 To get information about a specific instance of a bridge, issue a GET request
 to the `/admin/bridges/BRIDGENAME` path (where BRIDGENAME is the name of the
-bridge that you want to delete).
+bridge).
 
 A 200 (OK) status code is returned if the REST API accepts the request or a
 status code of 404 (Not Found) is returned if no bridge for the specified bridge
