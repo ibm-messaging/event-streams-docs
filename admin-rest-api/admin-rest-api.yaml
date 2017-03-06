@@ -1,5 +1,5 @@
 #
-# Copyright 2015 IBM
+# Copyright 2015, 2017 IBM
 #
 # Eclipse Public License - v 1.0
 #
@@ -38,10 +38,6 @@ tags:
   - name: Kafka Topic
     description: >
       Methods that relate to administering Kafka topics.
-  - name: Technology Preview
-    description: >
-      Methods tagged with the _Technology Preview_ tag are under active
-      development and may be subject to change.
 
 paths:
   # =====================================
@@ -172,7 +168,6 @@ paths:
         returned from this call.
       tags:
         - Bridge
-        - Technology Preview
       security:
         - X-Auth-Token: []
       responses:
@@ -198,15 +193,14 @@ paths:
         Creates a new instance of a Message Hub bridge.
       tags:
         - Bridge
-        - Technology Preview
       parameters:
-        - name: ObjectStorageOutConfigParam
+        - name: GenericBridgeConfigParam
           description: >
             Configurable parameters for bridge creation.
           in: body
           required: true
           schema:
-            $ref: '#/definitions/ObjectStorageOutConfigParam'
+            $ref: '#/definitions/GenericBridgeConfigParam'
 
       security:
         - X-Auth-Token: []
@@ -252,7 +246,6 @@ paths:
       summary: Get information about a bridge.
       tags:
         - Bridge
-        - Technology Preview
       description: >
         Use the name of a bridge to retrieve information about the specific
         bridge instance.
@@ -285,7 +278,6 @@ paths:
       summary: Delete a bridge.
       tags:
         - Bridge
-        - Technology Preview
       description: >
         Delete a specific instance of a bridge by specifying the name given to
         the bridge when it was created.
@@ -312,15 +304,70 @@ paths:
           schema:
             $ref: '#/definitions/ErrorInfo'
 
-    put:
-      summary: Update bridge parameters.
+    patch:
+      summary: Update a subset of a bridge's parameters.
       description: >
-        Replaces the parameters used to configure a bridge with a new set of
+        Update a subset of the bridge's parameters based on the values supplied
+        in the JSON request body which should follow the format described by
+        [RFC 7386](https://tools.ietf.org/html/rfc7386). The bridge is
+        automatically restarted to pick up the changes.
+      consumes: 
+       - application/merge-patch+json
+      security:
+       - X-Auth-Token: []
+      parameters:
+        - name: name
+          in: path
+          description: The name of the bridge to update.
+          required: true
+          type: string
+        - name: patch
+          in: body
+          description: >
+            JSON to patch bridge with. It must follow the structure of the
+            bridge type to be patched e.g. `MqInBridgeConfigParam` or 
+            `ObjectStorageOutBridgeConfigParam` although you need only supply
+            the fields which are to be changed. To delete a field, set its value
+            to `null` in the JSON.
+          required: true
+          schema:
+            $ref: '#/definitions/GenericBridgeConfigParam'
+      responses:
+        '200':
+          description: Bridge updated with new parameters.
+        '400':
+          description: >
+            The JSON object describing the merge patch to the bridge is either
+            syntactically invalid, or does not contain one or more of the
+            required fields.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '401':
+          description: >
+            either no `X-Auth-Token` header was specified, or the value of the
+            `X-Auth-Token` header is not a valid API key that can be used to
+            successfully authenticate with the Message Hub Bluemix service.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '404':
+          description: No bridge exists with the specified bridge name.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+        '422':
+          description: >
+            Although the request was syntactically valid it was not possible to
+            patch the bridge.
+          schema:
+            $ref: '#/definitions/ErrorInfo'
+
+    put:
+      summary: Update all bridge parameters.
+      description: >
+        Replaces all the parameters used to configure a bridge with a new set of
         parameters. The bridge is automatically restarted to pick up the
         changes.
       tags:
         - Bridge
-        - Technology Preview
       security:
         - X-Auth-Token: []
       parameters:
@@ -329,14 +376,16 @@ paths:
           description: The name of the bridge to update.
           required: true
           type: string
-        - name: ObjectStorageOutConfigParam
+        - name: GenericBridgeConfigParam
           description: >
             A new set of configuration parameters to use when modifying an
-            existing instance of the bridge.
+            existing instance of the bridge. The actual JSON object used to
+            update the bridge will either be of type `MqInBridgeConfigParam`
+            or `ObjectStorageOutBridgeConfigParam`.
           in: body
           required: true
           schema:
-            $ref: '#/definitions/ObjectStorageOutConfigParam'
+            $ref: '#/definitions/GenericBridgeConfigParam'
       responses:
         '200':
           description: Bridge updated with new parameters.
@@ -376,7 +425,6 @@ paths:
         bridge has no effect and returns a successful status code.
       tags:
         - Bridge
-        - Technology Preview
       security:
         - X-Auth-Token: []
       parameters:
@@ -410,7 +458,6 @@ paths:
         and returns a successful status code.
       tags:
         - Bridge
-        - Technology Preview
       security:
         - X-Auth-Token: []
       parameters:
@@ -516,7 +563,7 @@ definitions:
       - state
     properties:
       configuration:
-        $ref: '#/definitions/ObjectStorageOutConfigParam'
+        $ref: '#/definitions/GenericBridgeConfigParam'
       state:
         required:
           - value
@@ -537,12 +584,13 @@ definitions:
               An English language message providing details about the status of
               the bridge.
 
-  ObjectStorageOutConfigParam:
+  GenericBridgeConfigParam:
+    discriminator: type
     required:
       - name
       - topic
       - type
-      - configuration
+    description: Properties common to all types of bridge.
     properties:
       name:
         type: string
@@ -550,97 +598,192 @@ definitions:
       topic:
         type: string
         description: >
-          The Kafka topic that the bridge will consume messages from.
+          The Kafka topic that the bridge will produce messages to, or consume
+          messages from.
       type:
         type: string
         description: >
-          Type of bridge. Currently this must be the value `objectStorageOut`.
+          Type of bridge. This is used to determine whether the JSON object is
+          actually of type `MqInBridgeConfigParm` or
+          `ObjectStorageOutBridgeConfigParam`.
         enum:
+          - mqIn
           - objectStorageOut
-      configuration:
-        type: object
+
+
+  MqInBridgeConfigParam:
+    description:
+      Configuration for creating and updating instances of a type of bridge
+      which can be used to transfer data from IBM MQ to Message Hub Kafka.
+    allOf:
+      - $ref: '#/definitions/GenericBridgeConfigParam'
+      - type: object
         description: >
-          Configuration that is used to connect to the Bluemix Object Storage
-          service and also determine how the bridge converts Kafka messages into
-          Object Storage service files.
+          Properties specific to the MQ bridge.
         required:
-          - credentials
-          - container
-          - partitioning
-          - uploadDurationThresholdSeconds
-          - uploadSizeThresholdKB
+          - configuration
         properties:
-          credentials:
+          configuration:
             type: object
-            description: >
-              The credentials used to connect to the Object Storage service.
             required:
-              - authUrl
-              - region
-              - password
-              - projectId
-              - userId
+              - channel
+              - endpoints
+              - key
+              - queue
+              - queueManager
+              - reliability
             properties:
-              authUrl:
+              channel:
                 type: string
                 description: >
-                  The `auth_url` property from the Object Storage service
-                  credentials.
-              region:
+                  The name of the MQ channel to use when connecting to the MQ
+                  queue manager.
+              endpoints:
+                type: array
+                description: >
+                  An array of endpoints to use when connecting to the queue
+                  manager. For example: `["qm1.example.com:1414"]`. Multiple
+                  values can be specified when connecting to an MQ
+                  multi-instance queue manager.
+                items:
+                  - type: string
+              key:
                 type: string
                 description: >
-                  The `region` property from the Object Storage service
-                  credentials.
+                  Determines how the bridge will assign MQ messages to Kafka
+                  topic partitions. A value of `default` will use the default
+                  Kafka assignment (which is round-robin style distribution).
+                  A value of `correlationId` will forward all messages with the
+                  same `MQMD.CorrelId` field to the same Kafka partition. A
+                  value of `groupId` will forward all messages with the same
+                  `MQMD.GroupId` field to the same Kafka partition.
+                enum:
+                  - default
+                  - correlationId
+                  - groupId
               password:
                 type: string
                 description: >
-                  The `password` property from the Object Storage service
-                  credentials.
-              projectId:
+                  The password that the bridge will supply when it connects to
+                  the MQ queue manager.
+              queue:
                 type: string
                 description: >
-                  The `projectId` property from the Object Storage service
-                  credentials.
+                  The name of the MQ queue that the bridge will receive messages
+                  from.
+              queueManager:
+                type: string
+                description: >
+                  The name of the MQ queue manager that the bridge will connect
+                  to.
+              reliability:
+                type: string
+                description: Must be the value `atLeastOnce`.
+                enum:
+                  - atLeastOnce
               userId:
                 type: string
                 description: >
-                  The `userId` property from the Object Storage service
-                  credentials.
-          container:
-            type: string
+                  The user identifier that the bridge will supply when it
+                  connects to the MQ queue manager
+
+  ObjectStorageOutConfigParam:
+    description: >
+      Configuration for creating and updating instances of a type of bridge
+      which can be used to transfer Message Hub data to an instance of the
+      Bluemix Object Storage service.
+    allOf:
+      - $ref: '#/definitions/GenericBridgeConfigParam'
+      - type: object
+        description: >
+          Properties specific to the Object Storage bridge.
+        required:
+          - configuration
+        properties:
+          configuration:
+            type: object
             description: >
-              The name of the Object Storage service container into which
-              this bridge will upload files.
-          uploadDurationThresholdSeconds:
-            type: integer
-            description: >
-              The maximum amount of time (in seconds) that this bridge will
-              cache data read from Kafka before it uploads it as a file to
-              the Object Storage service.
-            minimum: 10
-            maximum: 21600   # 6 hours
-          uploadSizeThresholdKB:
-            type: integer
-            description: >
-              The maximum amount of data (in kilobytes) that this bridge
-              will read from Kafka and cache before it uploads it as a file
-              to the Object Storage service.
-            minimum: 1
-            maximum: 1048576 # 1GB
-          inputFormat:
-            type: string
-            description: >
-              The data format for the contents of the Kafka messages.
-            enum:
-              - json
-          partitioning:
-            type: array
-            description: >
-              An ordered array of partitioning schemes. These determine how
-              Kafka message data is placed into Object Storage service files
-              as well as the file names used.
-            items:
-              $ref: '#/definitions/BasePartitioningType'
+              Configuration that is used to connect to the Bluemix Object
+              Storage service and also determine how the bridge converts Kafka
+              messages into Object Storage service files.
+            required:
+              - credentials
+              - container
+              - partitioning
+              - uploadDurationThresholdSeconds
+              - uploadSizeThresholdKB
+            properties:
+              credentials:
+                type: object
+                description: >
+                  The credentials used to connect to the Object Storage service.
+                required:
+                  - authUrl
+                  - region
+                  - password
+                  - projectId
+                  - userId
+                properties:
+                  authUrl:
+                    type: string
+                    description: >
+                      The `auth_url` property from the Object Storage service
+                      credentials.
+                  region:
+                    type: string
+                    description: >
+                      The `region` property from the Object Storage service
+                      credentials.
+                  password:
+                    type: string
+                    description: >
+                      The `password` property from the Object Storage service
+                      credentials.
+                  projectId:
+                    type: string
+                    description: >
+                      The `projectId` property from the Object Storage service
+                      credentials.
+                  userId:
+                    type: string
+                    description: >
+                      The `userId` property from the Object Storage service
+                      credentials.
+              container:
+                type: string
+                description: >
+                  The name of the Object Storage service container into which
+                  this bridge will upload files.
+              uploadDurationThresholdSeconds:
+                type: integer
+                description: >
+                  The maximum amount of time (in seconds) that this bridge will
+                  cache data read from Kafka before the bridge uploads the data
+                  as a file to the Object Storage service.
+                minimum: 10
+                maximum: 21600   # 6 hours
+              uploadSizeThresholdKB:
+                type: integer
+                description: >
+                  The maximum amount of data (in kilobytes) that this bridge
+                  will read from Kafka and cache before the bridge uploads the
+                  data as a file to the Object Storage service.
+                minimum: 1
+                maximum: 1048576 # 1GB
+              inputFormat:
+                type: string
+                description: >
+                  The data format for the contents of the Kafka messages.
+                enum:
+                  - json
+              partitioning:
+                type: array
+                description: >
+                  An ordered array of partitioning schemes. These determine how
+                  Kafka message data is placed into Object Storage service files
+                  as well as the file names used.
+                items:
+                  $ref: '#/definitions/BasePartitioningType'
 
   BasePartitioningType:
     discriminator: type

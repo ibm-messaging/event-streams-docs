@@ -205,9 +205,6 @@ property contains a English language description of the error condition.
 
 ## Using the REST API to administer bridges
 
-:construction: The REST API methods for administering bridges are under active
-development and may be subject to change.
-
 ### Creating a bridge
 
 You can create a bridge by issuing a POST request to the `/admin/bridges`
@@ -243,6 +240,96 @@ type of bridge being created.  The following types of bridge can be created:
 | Value of `type` property | Bridge type           |
 |--------------------------|-----------------------|
 | `objectStorageOut`       | Object Storage bridge |
+
+#### Creating an MQ bridge
+
+The MQ bridge allows you to transfer data from
+[IBM MQ](www.ibm.com/software/products/en/ibm-mq) into Kafka. You can use the
+MQ bridge to:
+  - Export data from IBM MQ into Bluemix and apply cloud-style workloads (such
+    as analytic applications).
+
+To create an instance of the MQ bridge: specify a value of `mqIn` as the `type`
+property of the JSON document POSTed to `/admin/bridges`. The value of the
+`configuration` property used for creating an MQ bridge contains properties that
+determine how the bridge will use IBM MQ. Here's an example of a complete JSON
+document for creating an MQ bridge:
+
+```
+{
+  "name": "mqbridge",
+  "topic": "mqbridgetopic",
+  "type": "mqIn",
+  "configuration": {
+    "endpoints": [ "qm1.example.com:1414" ],
+    "queueManager": "QM1",
+    "channel": "SYSTEM.DEF.SVRCONN",
+    "queue": "SYSTEM.DEFAULT.LOCAL.QUEUE",
+    "password": "xxxxxx",
+    "userId": "mqUser"
+    "key": "default",
+    "reliability": "atLeastOnce",
+  }
+}
+```
+
+The values in the `endpoints` array are hostnames and ports that the bridge will
+use to contact the MQ queue manager. Typically this array will contain a single
+entry unless the bridge is connected to an MQ multi-instance queue manager.
+
+Use the `queueManager` property to specify the name of the MQ queue manager that
+the bridge will connect to. The `channel` property specifies the name of the
+MQ channel to connect using, and the `queue` property specifies the name of the
+MQ queue that the bridge will consume messages from.
+
+If you have enabled MQ to perform authentication based on user identifier and
+password values, you can specify these using the `userId` and `password`
+properties, respectively.
+
+The `key` property is used to determine how the bridge will distribute MQ
+messages across the partitions in the Message Hub Kafka topic. You can specify
+the following values for the `key` property:
+  - `default` - let Kafka decide on how MQ messages are assigned to available
+    partitions, typically this will be in a "round-robin" fashion.
+  - `correlationId` - use the MQMD.CorrelId field from the MQ message as the
+    record key. Kafka will store all MQ messages with the same MQ correlation
+    identifer on the same Kafka partition.
+  - `groupId` - use the MQMD.GroupId field from the MQ message as the record
+    key. Kafka will store all MQ messages with the same MQ group identifier on
+    the same Kafka partition.
+
+You must specify a value of `atLeastOnce` for the `reliability` property.
+
+##### Examples
+
+The following curl command creates a bridge called `mqbridge` which will connect
+to a queue manager (QM1) on host `qm1.example.com` and consume messages from
+a queue called `SYSTEM.DEFAULT.LOCAL.QUEUE`. The bridge will send messages to
+a Message Hub Kafka topic called `mqbridgetopic`.
+
+
+```
+curl -X POST -v -H 'Content-Type: application/json' -H 'Accept: */*' \
+    -H 'X-Auth-Token: yourapikeyhere' \
+    https://admin-endpoint-goes-here/admin/bridges \
+    -d @- << REQUEST
+{
+  "name": "mqbridge",
+  "topic": "mqbridgetopic",
+  "type": "mqIn",
+  "configuration": {
+    "endpoints": [ "qm1.example.com:1414" ],
+    "queueManager": "QM1",
+    "channel": "SYSTEM.DEF.SVRCONN",
+    "queue": "SYSTEM.DEFAULT.LOCAL.QUEUE",
+    "password": "xxxxxx",
+    "userId": "mqUser"
+    "key": "default",
+    "reliability": "atLeastOnce",
+  }
+}
+REQUEST
+```
 
 #### Creating an Object Storage bridge
 
@@ -498,10 +585,19 @@ curl -v -H 'Content-Type: application/json' -H 'Accept: */*' \
 
 ### Updating a bridge
 
+There are two ways that you can update a bridge:
+  1. Update all of the properties of the bridge at the same time by issuing a
+     PUT request to the `/admin/bridges/BRIDGENAME` path.
+  2. Update some of the properties of the bridge (while leaving other properties
+     of the bridge unchanged) by issing a PATCH request to the
+     `/admin/bridges/BRIDGENAME` path.
+
+#### Updating all the properties of a bridge (PUT)
+
 To update a bridge's configuration issue a PUT request to the
 `/admin/bridges/BRIDGENAME` path (where BRIDGENAME is the name of the bridge
 that you want to update). The body of the update request should be a JSON
-document that contains the new configuration for the bridge - in an identical
+document that contains the new configuration for the bridge in an identical
 format to that used when [creating a bridge](#creating-a-bridge).
 
 If the update request succeeds then the HTTP response will have 200 (OK) status
@@ -552,6 +648,48 @@ curl -X PUT -v -H 'Content-Type: application/json' -H 'Accept: */*' \
 }
 REQUEST
 ```
+
+#### Updating some of the properties of a bridge (PATCH)
+
+To update some of a bridge's configuration issue a PATCH request to the
+`/admin/bridges/BRIDGENAME` path (where BRIDGENAME is the name of the bridge
+that you want to update). The body of the patch request must be a JSON
+document which conforms to
+[RFC 7386 JSON Merge Patch](https://tools.ietf.org/html/rfc7386).
+
+If the patch request succeeds, the HTTP response will have a 200 (OK) status
+code. A status code of 404 (Not Found) will be returned if the bridge does not
+exist, and a status code of 422 (Unprocessable Entity) for other errors
+processing the request. If the patch request fails, the body of the HTTP
+response will contain a
+[JSON object](#information-returned-when-a-request-fails) which provides
+additional information about why the request was rejected.
+
+It is not possible to change the values for the following properties, from those
+specified when the bridge is created:
+  - `name`
+  - `topic`
+  - `type`
+
+##### Example
+
+The following curl command updates an Object Storage bridge named `osbridge` to
+specify a different `container` value:
+
+```
+curl -X PATCH -v -H 'Content-Type: application/json' -H 'Accept: */*' \
+    -H 'X-Auth-Token: yourapikeyhere' \
+    https://admin-endpoint-goes-here/admin/bridges/osbridge \
+    -d @- << REQUEST
+{
+  "configuration" : {
+    "container" : "oscontainer"
+  }
+}
+REQUEST
+```
+
+
 
 ### Deleting a bridge
 
@@ -624,3 +762,4 @@ curl -X POST -v -H 'Content-Type: application/json' \
 ## License
 The project is licensed under the Eclipse Public License - v 1.0 (see the
 [LICENSE](../LICENSE) file in the root directory of the repository).
+
