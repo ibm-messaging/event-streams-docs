@@ -16,7 +16,7 @@ operations:
   - [Create a Kafka topic](#creating-a-kafka-topic)
   - [List Kafka topics](#listing-kafka-topics)
   - [Delete a Kafka topic](#deleting-a-kafka-topic)
-  - [Create a bridge](#creating-a--bridge)
+  - [Create a bridge](#creating-a-bridge)
   - [Get information about a bridge](#getting-information-about-a-bridge)
   - [List bridges](#listing-bridges)
   - [Update a bridge](#updating-a-bridge)
