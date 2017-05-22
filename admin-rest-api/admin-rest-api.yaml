@@ -70,7 +70,7 @@ paths:
             successfully authenticate with the Message Hub Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
-        422:
+        '422':
           description: >
             The request contained syntactically valid JSON, but could not be
             completed. For more information, consult the value of the
@@ -494,7 +494,7 @@ definitions:
         type: string
         description: The name of the Kafka topic.
       retentionMs:
-        type: integer
+        type: string
         description: >
           The retention period for the topic (in milliseconds). Messages are
           stored on the topic for this period of time, after which they are
