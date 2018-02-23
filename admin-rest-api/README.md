@@ -53,6 +53,50 @@ Message Hub service. You can find the appropriate URL to use by examining the
 `kafka_admin_url` property of the `VCAP_SERVICES` environment variable set when
 you bind an application to an instance of the Message Hub service.
 
+## Using IBM Cloud CLI to get Administration API endpoint and API key
+
+1. Install IBM Cloud CLI https://console.bluemix.net/docs/cli/reference/bluemix_cli/get_started.html#getting-started
+
+2. Login to the environment using user name and password or API key or one-time passcode, specify endpoint via `-a` if you are not on a public environment.
+
+`bx login`
+
+3. Target to your organization and space where MessageHub service instance is created.
+
+`bx target --cf`
+
+4. List service instances and find the service instance name.
+
+`bx service list`
+
+5. List all service keys for an instance and find the service instance key name.
+
+`bx service keys <service-instance-name>`
+
+6. Show the service instance key's information.
+
+`bx service key-show <service-instance-name> <service-instance-key-name>`
+The output from this command is like below, it contains `api_key` and `kafka_admin_url` used in Administration REST API. 
+
+```
+{
+ "api_key": "xxxx",
+ "instance_id": "8528d083-585c-45df-8f86-877a4b777da8",
+ "kafka_admin_url": "https://kafka-admin-prod01.messagehub.services.us-south.bluemix.net:443",
+ "kafka_brokers_sasl": [
+  "kafka04-prod01.messagehub.services.us-south.bluemix.net:9093",
+  "kafka02-prod01.messagehub.services.us-south.bluemix.net:9093",
+  "kafka01-prod01.messagehub.services.us-south.bluemix.net:9093",
+  "kafka03-prod01.messagehub.services.us-south.bluemix.net:9093",
+  "kafka05-prod01.messagehub.services.us-south.bluemix.net:9093"
+ ],
+ "kafka_rest_url": "https://kafka-rest-prod01.messagehub.services.us-south.bluemix.net:443",
+ "mqlight_lookup_url": "https://mqlight-lookup-prod01.messagehub.services.us-south.bluemix.net/Lookup?serviceId=8528d083-585c-45df-8f86-877a4b777da8",
+ "password": "xxxx",
+ "user": "xxxx"
+}
+```
+
 ## Using the REST API to administer Kafka topics
 
 ### Creating a Kafka topic
