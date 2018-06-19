@@ -153,7 +153,7 @@ that you will need to specify your own API key as well as the correct endpoint
 for the Bluemix region you are using:
 
 ```
-curl -v -H -H 'Accept: application/json' \
+curl -v -H 'Accept: application/json' \
     -H 'X-Auth-Token: yourapikeyhere' \
     https://admin-endpoint-goes-here/admin/topics/
 ```
