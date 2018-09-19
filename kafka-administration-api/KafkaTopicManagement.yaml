@@ -1,5 +1,5 @@
 #
-# Copyright 2015 IBM
+# Copyright 2015, 2018 IBM
 #
 # Eclipse Public License - v 1.0
 #
@@ -14,7 +14,7 @@
 
 swagger: '2.0'
 info:
-  title: Message Hub topic management API
+  title: Event Streams topic management API
   version: "v1"
 
 schemes:

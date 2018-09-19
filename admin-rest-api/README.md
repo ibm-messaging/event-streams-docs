@@ -4,10 +4,10 @@
 > to the top level [README](../README.md) for an overview of all components
 >  documented in this repository.
 
-# Message Hub Administration REST API
+# Event Streams Administration REST API
 
 This REST API allows users of the
-[IBM Message Hub service](http://www-03.ibm.com/software/products/en/ibm-message-hub)
+[IBM Event Streams service](https://console.bluemix.net/docs/services/EventStreams/index.html)
 to administer
 [Kafka topics](#using-the-rest-api-to-administer-kafka-topics)
 and [bridges](#using-the-rest-api-to-administer-bridges) associated with an
@@ -32,9 +32,9 @@ Access to the API is protected using an API key. An API key must be specified
 on each HTTP request to the API, using the `X-Auth-Token` HTTP header. API keys
 can be obtained in a number of ways:
   - From the `VCAP_SERVICES` environment variable of an application bound to
-    an instance of the Message Hub service. The API key is associated with a
+    an instance of the Event Streams service. The API key is associated with a
     property named `api_key`
-  - Selecting an instance of the Message Hub service from within the Bluemix
+  - Selecting an instance of the Event Streams service from within the Bluemix
     User Interface and choosing the "Service Credentials" tab.
   - Using the `bluemix` command line tool and specifying the
     `service service-key` command.
@@ -49,9 +49,9 @@ status code of 401 returned in the response.
 ## Locating the correct Administration API endpoint
 
 The REST API is specific to the Bluemix region within which you are using the
-Message Hub service. You can find the appropriate URL to use by examining the
+Event Streams service. You can find the appropriate URL to use by examining the
 `kafka_admin_url` property of the `VCAP_SERVICES` environment variable set when
-you bind an application to an instance of the Message Hub service.
+you bind an application to an instance of the Event Streams service.
 
 ## Using the REST API to administer Kafka topics
 
@@ -287,7 +287,7 @@ password values, you can specify these using the `userId` and `password`
 properties, respectively.
 
 The `key` property is used to determine how the bridge will distribute MQ
-messages across the partitions in the Message Hub Kafka topic. You can specify
+messages across the partitions in the Event Streams Kafka topic. You can specify
 the following values for the `key` property:
   - `default` - let Kafka decide on how MQ messages are assigned to available
     partitions, typically this will be in a "round-robin" fashion.
@@ -305,7 +305,7 @@ You must specify a value of `atLeastOnce` for the `reliability` property.
 The following curl command creates a bridge called `mqbridge` which will connect
 to a queue manager (QM1) on host `qm1.example.com` and consume messages from
 a queue called `SYSTEM.DEFAULT.LOCAL.QUEUE`. The bridge will send messages to
-a Message Hub Kafka topic called `mqbridgetopic`.
+an Event Streams Kafka topic called `mqbridgetopic`.
 
 
 ```

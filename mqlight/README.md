@@ -1,7 +1,6 @@
 ## MQ Light Samples
 
-You can find samples that demonstrate using the MQ Light API with IBM Message
-Hub in the following repositories:
+You can find samples that demonstrate using the MQ Light API with IBM Event Streams in the following repositories:
 
 | Language | Repository                                                |
 |----------|-----------------------------------------------------------|
