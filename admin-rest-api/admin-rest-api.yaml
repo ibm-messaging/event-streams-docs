@@ -1,5 +1,5 @@
 #
-# Copyright 2015, 2017 IBM
+# Copyright 2015, 2018 IBM
 #
 # Eclipse Public License - v 1.0
 #
@@ -9,7 +9,7 @@
 
 swagger: '2.0'
 info:
-  title: Message Hub Administration REST API
+  title: Event Streams Administration REST API
   version: "1"
 
 schemes:
@@ -27,7 +27,7 @@ securityDefinitions:
     description: >
       A valid API key is required to access this API.  API keys can be allocated
       via the IBM Bluemix interface, and are associated with an instance of the
-      Message Hub service. API key values must be supplied on every REST request
+      Event Streams service. API key values must be supplied on every REST request
       using the `X-Auth-Token` HTTP header. Failure to specify a valid API key
       will result in the REST request failing with a 401 (Unauthorized) status
       code.
@@ -48,7 +48,7 @@ paths:
       summary: List Kafka topics.
       description: >
         Returns a list containing information about all of the Kafka topics that
-        are defined for an instance of the Message Hub service. If there are
+        are defined for an instance of the Event Streams service. If there are
         currently no topics defined then an empty list is returned.
       tags:
         - Kafka Topic
@@ -67,7 +67,7 @@ paths:
           description: >
             Either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
         422:
@@ -110,7 +110,7 @@ paths:
           description: >
             Either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
         '422':
@@ -148,7 +148,7 @@ paths:
           description: >
             Either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
         '422':
@@ -164,7 +164,7 @@ paths:
       summary: Lists bridges
       description: >
         Lists the bridges that are currently defined for an instance of the
-        Message Hub service. If no bridges are defined then an empty list is
+        Event Streams service. If no bridges are defined then an empty list is
         returned from this call.
       tags:
         - Bridge
@@ -183,14 +183,14 @@ paths:
           description: >
             Either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
 
     post:
       summary: Creates a bridge
       description: >
-        Creates a new instance of a Message Hub bridge.
+        Creates a new instance of an Event Streams bridge.
       tags:
         - Bridge
       parameters:
@@ -222,7 +222,7 @@ paths:
           description: >
             Either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
         '422':
@@ -235,7 +235,7 @@ paths:
             $ref: '#/definitions/ErrorInfo'
         '507':
           description: >
-            The Message Hub service does not have sufficient resources to create
+            The Event Streams service does not have sufficient resources to create
             a new bridge at this time.
           schema:
             $ref: '#/definitions/ErrorInfo'
@@ -266,7 +266,7 @@ paths:
           description: >
             Either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
         '404':
@@ -296,7 +296,7 @@ paths:
           description: >
             Either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
         '404':
@@ -346,7 +346,7 @@ paths:
           description: >
             either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
         '404':
@@ -400,7 +400,7 @@ paths:
           description: >
             Either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
         '404':
@@ -440,7 +440,7 @@ paths:
           description: >
             Either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
         '404':
@@ -473,7 +473,7 @@ paths:
           description: >
             Either no `X-Auth-Token` header was specified, or the value of the
             `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Message Hub Bluemix service.
+            successfully authenticate with the Event Streams Bluemix service.
           schema:
             $ref: '#/definitions/ErrorInfo'
         '404':
@@ -614,7 +614,7 @@ definitions:
   MqInBridgeConfigParam:
     description:
       Configuration for creating and updating instances of a type of bridge
-      which can be used to transfer data from IBM MQ to Message Hub Kafka.
+      which can be used to transfer data from IBM MQ to Event Streams Kafka.
     allOf:
       - $ref: '#/definitions/GenericBridgeConfigParam'
       - type: object
@@ -690,7 +690,7 @@ definitions:
   ObjectStorageOutConfigParam:
     description: >
       Configuration for creating and updating instances of a type of bridge
-      which can be used to transfer Message Hub data to an instance of the
+      which can be used to transfer Event Streams data to an instance of the
       Bluemix Object Storage service.
     allOf:
       - $ref: '#/definitions/GenericBridgeConfigParam'

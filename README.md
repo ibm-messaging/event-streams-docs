@@ -1,12 +1,10 @@
-# message-hub-docs
+# event-streams-docs
 
 This repository contains documentation for the
-[IBM Message Hub service](http://www-03.ibm.com/software/products/en/ibm-message-hub).
+[IBM Event Streams service](https://console.bluemix.net/docs/services/EventStreams/index.html).
 
-  - [admin-rest-api](./admin-rest-api) - information about administering Message
-    Hub using its REST API.
-  - [mqlight](./mqlight) - links to samples that demonstrate using the MQ Light
-    API with Message Hub.
+  - [admin-rest-api](./admin-rest-api) - information about administering Event Streams using its REST API.
+  - [mqlight](./mqlight) - links to samples that demonstrate using the MQ Light API with Event Streams(Standard plan only).
 
 ## License
 The project is licensed under the Eclipse Public License - v 1.0 (see the
