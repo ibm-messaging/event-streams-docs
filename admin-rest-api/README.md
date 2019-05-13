@@ -14,9 +14,9 @@ associated with an instance of the service. You can use this API to perform the 
 operations:
   - [Create a Kafka topic](#creating-a-kafka-topic)
   - [List Kafka topics](#listing-kafka-topics)
-  - [Get a Kafka topic](#Getting-a-kafka-topic)
+  - [Get a Kafka topic](#getting-a-kafka-topic)
   - [Delete a Kafka topic](#deleting-a-kafka-topic)
-  - [Delete records from a Kafka topic](#deleting-records)
+  - [Update a Kafka topic configuration](#updating-kafka-topics-configuration)
   
 The Admin REST API is also [documented using swagger](./admin-rest-api.yaml).
 
@@ -228,7 +228,7 @@ curl -i -X GET -H 'Content-Type: application/json' -H 'Authorization: Bearer ${T
 
 ### Updating Kafka topic's configuration
 
-To update a topic's partition number or to update a topic's configuration, issue an
+To increase a topic's partition number or to update a topic's configuration, issue an
 `PATCH` request to `/admin/topics/{topic}` with the following body:
 ```json
 {
@@ -241,6 +241,9 @@ To update a topic's partition number or to update a topic's configuration, issue
   ]
 }
 ```
+Supported configuration keys are 'cleanup.policy', 'retention.ms', 'retention.bytes', 'segment.bytes', 'segment.ms', 'segment.index.bytes'.
+And partition number can only be increased, not decreased.
+
 Expected status codes
   - 202: Update topic request was accepted.
   - 400: Invalid request JSON/number of partitions is invalid.
@@ -251,31 +254,4 @@ Expected status codes
 The following curl command updates a topic called `MYTOPIC`, set its `partitions` to 4 and its `cleanup.policy` to be `compact`.
 ```bash
 curl -i -X PATCH -H 'Content-Type: application/json' -H 'Authorization: Bearer ${TOKEN}' --data '{"new_total_partition_count": 4,"configs":[{"name":"cleanup.policy","value":"compact"}]}' ${ADMIN_URL}/admin/topics/MYTOPIC
-```
-
-
-### Deleting records from a Kafka topic
-To delete records from a Kafka topic, send a `DELETE` request to `/admin/topics/{topic}/records` with the following body:
-`partition` is the id of the partition where the records are, `before_offset` is the offset number before which records are going to be deleted.
-```json
-{
-  "records_to_delete": [
-    {
-      "partition": 0,
-      "before_offset": 2
-    }
-  ]
-}
-```
-Expected status codes
-  - 202: Delete topic records request was accepted.
-  - 400: Invalid request JSON.
-  - 403: User is not authorized to delete the records before the specified offset.
-  - 404: Specified topic or partition does not exist.
-  - 422: Semantically invalid request.
-
-#### Example
-The following curl command deletes records from a topic called `MYTOPIC`, the records are on partition 0 and before offset 2.
-```bash
-curl -i -X DELETE -H 'Content-Type: application/json' -H 'Authorization: Bearer ${TOKEN}' --data '{"records_to_delete":[{"partition":0,"before_offset":2}]}' ${ADMIN_URL}/admin/topics/MYTOPIC/records
 ```

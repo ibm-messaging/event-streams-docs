@@ -349,64 +349,6 @@ paths:
         503:
           $ref: '#/responses/service_unavailable'  
 
-  /admin/topics/{topic_name}/records:
-    #==========================================
-    # DELETE /admin/topics/{topic_name}/records
-    #==========================================
-    delete:
-      security:
-        - APIKeyAuth: []
-        - TokenAuth: []
-        - BasicAuth: []
-      operationId: DeleteTopicRecords
-      summary: Delete records before the given offset on a topic.
-      description: Delete records before the given offset on a topic.
-      consumes:
-        - application/json
-      parameters:
-        - $ref: '#/parameters/topic_name'
-        - $ref: '#/parameters/records_delete'
-      responses:
-        202:
-          description: Request was accepted.
-          headers: 
-            X-Global-Transaction-Id:
-              type: string
-              description: >
-                The transaction ID of the request for debugging purpose.
-                If the header is set on the request, it will be honored. If not, it will be generated. 
-                In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
-            Strict-Transport-Security:
-              type: string
-              default: max-age=31536000; includeSubDomains
-              description: > 
-                Specifies a period of time during which the user agent should only access the server using secure HTTPS connections.
-            Cache-Control:
-              type: string 
-              default: no-cache, no-store
-              description: >
-                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
-                And the cache should not store anything about the client request or server response.
-            Pragma: 
-              type: string
-              default: no-cache
-              description: >
-                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
-                Same as 'Cache-Control: no-cache'. It is used for backwards compatibility with HTTP/1.0.
-          schema:
-            $ref: '#/definitions/empty'
-        400:
-          $ref: '#/responses/bad_request'
-        401:
-          $ref: '#/responses/unauthorized'
-        403:
-          $ref: '#/responses/forbidden'
-        404:
-          $ref: '#/responses/not_found'
-        422:
-          $ref: '#/responses/unprocessable_entity'
-        503:
-          $ref: '#/responses/service_unavailable'
   
 definitions:
   empty:
@@ -553,26 +495,6 @@ definitions:
               type: integer
               description: The IDs of replicas of the partition.
   
-  partition_delete_records:
-    type: object
-    properties:
-      records_to_delete:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/record_to_delete'
-  
-  record_to_delete:
-    type: object
-    properties:
-      partition:
-        type: integer
-        format: int32
-        description: The number of partitions.
-      before_offset:
-        type: integer
-        format: int64
-        description: The offset number before which records to be deleted.
 
 # Descriptions of common parameters
 parameters:
