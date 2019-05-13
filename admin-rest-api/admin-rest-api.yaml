@@ -549,14 +549,6 @@ parameters:
     schema:
       $ref: '#/definitions/topic_update_request'
   
-  records_delete:
-    name: records_delete
-    in: body
-    required: true
-    description: The records in which partition and before which offset to be deleted.
-    schema:
-      $ref: '#/definitions/partition_delete_records'  
-  
 # Descriptions of common responses
 responses:
   service_unavailable:
