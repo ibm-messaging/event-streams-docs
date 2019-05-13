@@ -1,5 +1,5 @@
 #
-# Copyright 2015, 2018 IBM
+# Copyright 2018, 2019 IBM
 #
 # Eclipse Public License - v 1.0
 #
@@ -8,810 +8,661 @@
 #CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
 
 swagger: '2.0'
-info:
-  title: Event Streams Administration REST API
-  version: "1"
 
-schemes:
+info:
+  version: 1.1.0
+  title: IBM Event Streams Administration REST API
+  description: The administration REST API for IBM Event Streams on Cloud.
+
+securityDefinitions:
+  APIKeyAuth:
+    type: apiKey
+    in: header
+    name: X-Auth-Token
+    description: >
+      A valid API key is required to access this API.  API keys can be allocated
+      via the IBM Cloud interface, and are associated with an instance of the
+      Event Streams service. API key values must be supplied on every REST request
+      using the `X-Auth-Token` HTTP header. Failure to specify a valid API key
+      will result in the REST request failing with a 401 (Unauthorized) status
+      code. `X-Auth-Token` header is deprecated, `Authorization` header is recommanded.
+  TokenAuth:
+    type: apiKey
+    in: header
+    name: Authorization
+    description: >
+      A valid token or API key is required to access this API. API keys can be allocated
+      via the IBM Cloud interface, and are associated with an instance of the
+      Event Streams service. Token is obtained upon login to IBM Cloud and is associated with 
+      the identity of the user. Either token or API key must be supplied on every REST request
+      using the `Authorization` `Bearer ${TokenOrAPIKey}` HTTP header. Failure to do so will 
+      result in the REST request failing with a 401 (Unauthorized) status code.
+  BasicAuth:
+    type: basic
+    description: >
+      To use basic authentication, the HTTP header name is `Authorization`, value is 
+      `Basic <base64 encoded value of username:password>.
+      For enterprise plan, user name is `token`, password is API key. For standard plan, user
+      name is tenant ID, password is API key. 
+
+schemes: 
   - https
 consumes:
   - application/json
 produces:
   - application/json
 
-securityDefinitions:
-  X-Auth-Token:
-    type: apiKey
-    name: X-Auth-Token
-    in: header
-    description: >
-      A valid API key is required to access this API.  API keys can be allocated
-      via the IBM Bluemix interface, and are associated with an instance of the
-      Event Streams service. API key values must be supplied on every REST request
-      using the `X-Auth-Token` HTTP header. Failure to specify a valid API key
-      will result in the REST request failing with a 401 (Unauthorized) status
-      code.
-tags:
-  - name: Bridge
-    description: >
-      Methods that relate to administering bridges.
-  - name: Kafka Topic
-    description: >
-      Methods that relate to administering Kafka topics.
-
 paths:
-  # =====================================
-  # APIs for managing topics
-  # =====================================
-  /admin/topics:
-    get:
-      summary: List Kafka topics.
-      description: >
-        Returns a list containing information about all of the Kafka topics that
-        are defined for an instance of the Event Streams service. If there are
-        currently no topics defined then an empty list is returned.
-      tags:
-        - Kafka Topic
-      security:
-        - X-Auth-Token: []
-      responses:
-        '200':
-          description: >
-            Success.  A list of topic information objects is returned in the
-            response body.
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/TopicInfo'
-        '401':
-          description: >
-            Either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        422:
-          description: >
-            The request contained syntactically valid JSON, but could not be
-            completed. For more information, consult the value of the
-            `errorMessage` property in the JSON object return as the response
-            body.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
 
+#====================================================================================#
+# APIs for managing topics
+#====================================================================================#
+  /admin/topics:
+    #==============================
+    # POST /topics
+    #==============================
     post:
-      summary: Create a Kafka topic.
-      description: >
-        Creates a new Kafka topic using the values supplied in the request body.
-      tags:
-        - Kafka Topic
       security:
-        - X-Auth-Token: []
+        - APIKeyAuth: []
+        - TokenAuth: []
+        - BasicAuth:  []
+      operationId: CreateTopic
+      summary: Create a new topic.
+      description: Create a new topic.
+      consumes:
+        - application/json
       parameters:
-        - name: TopicCreateParam
-          description: >
-            A JSON object containing configuration parameters used to create the
-            Kafka topic.
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/TopicCreateParam'
+        - $ref: '#/parameters/topic_create'
       responses:
-        '202':
+        202:
           description: >
             Topic creation request accepted. Topic creation occurs
             asynchronously, and therefore invoking the list topics REST endpoint
             may not immediately show newly created topics.
           headers:
-            Location:
+            X-Global-Transaction-Id:
               type: string
-              description: Location (resource URI) for the created topic.
-        '401':
-          description: >
-            Either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
+              description: >
+                The transaction ID of the request for debugging purpose.
+                If the header is set on the request, it will be honored. If not, it will be generated. 
+                In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
+            Strict-Transport-Security:
+              type: string
+              default: max-age=31536000; includeSubDomains
+              description: > 
+                Specifies a period of time during which the user agent should only access the server using secure HTTPS connections.
+            Cache-Control:
+              type: string 
+              default: no-cache, no-store
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                And the cache should not store anything about the client request or server response.
+            Pragma: 
+              type: string
+              default: no-cache
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                Same as 'Cache-Control: no-cache'. It is used for backwards compatibility with HTTP/1.0.
           schema:
-            $ref: '#/definitions/ErrorInfo'
-        '422':
-          description: >
-            The request contained syntactically valid JSON, but could not be
-            completed. For more information, consult the value of the
-            `errorMessage` property in the JSON object return as the response
-            body.
-          schema:
-             $ref: '#/definitions/ErrorInfo'
+            $ref: '#/definitions/empty'
+        400:
+          $ref: '#/responses/bad_request'
+        401:
+          $ref: '#/responses/unauthorized'
+        403:     
+          $ref: '#/responses/forbidden'
+        422:
+          $ref: '#/responses/unprocessable_entity'
+        503:
+          $ref: '#/responses/service_unavailable'
 
-  /admin/topics/{name}:
-    delete:
-      summary: Delete a topic
-      description: Delete a Kafka topic based on the topic's name.
-      tags:
-        - Kafka Topic
+    #==============================
+    # GET /topics
+    #==============================  
+    get:
       security:
-        - X-Auth-Token: []
+        - APIKeyAuth: []
+        - TokenAuth: []
+        - BasicAuth:  []
+      operationId: ListTopics
+      summary: Get a list of topics.
+      description: >
+        Returns a list containing information about all of the Kafka topics that
+        are defined for an instance of the Event Streams service. If there are
+        currently no topics defined then an empty list is returned.
       parameters:
-        - name: name
-          in: path
-          description: The name of the topic to be deleted.
-          required: true
-          type: string
+        - $ref: '#/parameters/topic_filter'
+        - $ref: '#/parameters/per_page'
+        - $ref: '#/parameters/page'
       responses:
-        '202':
+        200:
+          description: >
+            Success.  A list of topic information objects is returned in the
+            response body.
+          headers:
+            X-Global-Transaction-Id:
+              type: string
+              description: >
+                The transaction ID of the request for debugging purpose.
+                If the header is set on the request, it will be honored. If not, it will be generated. 
+                In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
+            Strict-Transport-Security:
+              type: string
+              default: max-age=31536000; includeSubDomains
+              description: > 
+                Specifies a period of time during which the user agent should only access the server using secure HTTPS connections.
+            Cache-Control:
+              type: string 
+              default: no-cache, no-store
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                And the cache should not store anything about the client request or server response.
+            Pragma: 
+              type: string
+              default: no-cache
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                Same as 'Cache-Control: no-cache'. It is used for backwards compatibility with HTTP/1.0.
+            X-Total-Count:
+              type: integer
+              description: The total number of topics available. 
+            Link:
+              type: string
+              description: >
+                The client can scroll through pages using the links generated in the Link header.
+                There are 4 links encoded in the header which represent the first, last, next and
+                previous operations. An example header is Link:
+                <http://kafka.admin.host/admin/topics?page=2&per_page=20>; rel="next",
+                <http://kafka.admin.host/admin/topics?page=1&per_page=20>; rel="first",
+                <http://kafka.admin.host/admin/topics?page=5&per_page=20>; rel="last"
+          schema:
+            $ref: '#/definitions/topic_list'  
+        401:
+          $ref: '#/responses/unauthorized'
+        503:
+          $ref: '#/responses/service_unavailable'
+
+
+  /admin/topics/{topic_name}:
+    #==================================
+    # GET /admin/topics/{topic_name}
+    #==================================
+    get:
+      security:
+        - APIKeyAuth: []
+        - TokenAuth: []
+        - BasicAuth: []
+      operationId: GetTopic
+      summary: Get detailed information on a topic.
+      description: Get detailed information on a topic.
+      parameters:
+        - $ref: '#/parameters/topic_name'
+      responses:
+        200:
+          description: Returns a detailed description of a single topic.
+          headers:
+            X-Global-Transaction-Id:
+              type: string
+              description: >
+                The transaction ID of the request for debugging purpose.
+                If the header is set on the request, it will be honored. If not, it will be generated. 
+                In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'. 
+            Strict-Transport-Security:
+              type: string
+              default: max-age=31536000; includeSubDomains
+              description: > 
+                Specifies a period of time during which the user agent should only access the server using secure HTTPS connections.
+            Cache-Control:
+              type: string 
+              default: no-cache, no-store
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                And the cache should not store anything about the client request or server response.
+            Pragma: 
+              type: string
+              default: no-cache
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                Same as 'Cache-Control: no-cache'. It is used for backwards compatibility with HTTP/1.0.
+          schema:
+            $ref: '#/definitions/topic_detail'
+        401:
+          $ref: '#/responses/unauthorized'
+        404:
+          $ref: '#/responses/not_found'
+        503:
+          $ref: '#/responses/service_unavailable'
+    
+    #==================================
+    # DELETE /admin/topics/{topic_name}
+    #==================================
+    delete:
+      security:
+        - APIKeyAuth: []
+        - TokenAuth: []
+        - BasicAuth: []
+      operationId: DeleteTopic
+      summary: Delete a topic.
+      description: Delete a topic.
+      parameters:
+        - $ref: '#/parameters/topic_name'
+      responses:
+        202:
           description: >
             The Topic delete request accepted. The Kafka topic deletion process
             occurs asynchronously. Duplicate deletion requests for a topic which
             is in the process of being deleted will return this status code.
             Requests to delete a non-existent topic will also return this status
             code.
-        '401':
-          description: >
-            Either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '422':
-          description: The topic has already been marked for deletion.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-
-  # =====================================
-  # APIs for managing bridges
-  # =====================================
-  /admin/bridges:
-    get:
-      summary: Lists bridges
-      description: >
-        Lists the bridges that are currently defined for an instance of the
-        Event Streams service. If no bridges are defined then an empty list is
-        returned from this call.
-      tags:
-        - Bridge
-      security:
-        - X-Auth-Token: []
-      responses:
-        '200':
-          description: >
-            Success. A list of bridge information objects is returned in the
-            response body.
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/BridgeInfo'
-        '401':
-          description: >
-            Either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-
-    post:
-      summary: Creates a bridge
-      description: >
-        Creates a new instance of an Event Streams bridge.
-      tags:
-        - Bridge
-      parameters:
-        - name: GenericBridgeConfigParam
-          description: >
-            Configurable parameters for bridge creation.
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/GenericBridgeConfigParam'
-
-      security:
-        - X-Auth-Token: []
-      responses:
-        '201':
-          description: The bridge was created.
           headers:
-            Location:
+            X-Global-Transaction-Id:
               type: string
-              description: Location (resource URI) for the created bridge
-        '400':
-          description: >
-            The JSON object describing the bridge to create is either
-            syntactically invalid, or does not contain one or more of the
-            required fields.
+              description: >
+                The transaction ID of the request for debugging purpose.
+                If the header is set on the request, it will be honored. If not, it will be generated. 
+                In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
+            Strict-Transport-Security:
+              type: string
+              default: max-age=31536000; includeSubDomains
+              description: > 
+                Specifies a period of time during which the user agent should only access the server using secure HTTPS connections.
+            Cache-Control:
+              type: string 
+              default: no-cache, no-store
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                And the cache should not store anything about the client request or server response.
+            Pragma: 
+              type: string
+              default: no-cache
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                Same as 'Cache-Control: no-cache'. It is used for backwards compatibility with HTTP/1.0.
           schema:
-            $ref: '#/definitions/ErrorInfo'
-        '401':
-          description: >
-            Either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '422':
-          description: >
-            Although the request was syntactically valid, it was not possible to
-            create the bridge. For more information, consult the value of the
-            `errorMessage` property in the JSON object return as the response
-            body.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '507':
-          description: >
-            The Event Streams service does not have sufficient resources to create
-            a new bridge at this time.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-
-  /admin/bridges/{name}:
-
-    get:
-      summary: Get information about a bridge.
-      tags:
-        - Bridge
-      description: >
-        Use the name of a bridge to retrieve information about the specific
-        bridge instance.
-      security:
-        - X-Auth-Token: []
-      parameters:
-        - name: name
-          in: path
-          description: The name of the bridge to retrieve information about.
-          required: true
-          type: string
-      responses:
-        '200':
-          description: Bridge information returned.
-          schema:
-            $ref: '#/definitions/BridgeInfo'
-        '401':
-          description: >
-            Either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '404':
-          description: No bridge exists with the specified bridge name.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-
-    delete:
-      summary: Delete a bridge.
-      tags:
-        - Bridge
-      description: >
-        Delete a specific instance of a bridge by specifying the name given to
-        the bridge when it was created.
-      security:
-        - X-Auth-Token: []
-      parameters:
-        - name: name
-          in: path
-          description: The name of the bridge to delete.
-          required: true
-          type: string
-      responses:
-        '204':
-          description: Bridge deleted.
-        '401':
-          description: >
-            Either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '404':
-          description: No bridge exists with the specified bridge name.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-
+            $ref: '#/definitions/empty'
+        401:
+          $ref: '#/responses/unauthorized'
+        403:
+          $ref: '#/responses/forbidden'
+        404:
+          $ref: '#/responses/not_found'
+        503:
+          $ref: '#/responses/service_unavailable'
+  
+    #=================================
+    # PATCH /admin/topics/{topic_name}
+    #=================================
     patch:
-      summary: Update a subset of a bridge's parameters.
-      description: >
-        Update a subset of the bridge's parameters based on the values supplied
-        in the JSON request body which should follow the format described by
-        [RFC 7386](https://tools.ietf.org/html/rfc7386). The bridge is
-        automatically restarted to pick up the changes.
-      consumes: 
-       - application/merge-patch+json
       security:
-       - X-Auth-Token: []
-      parameters:
-        - name: name
-          in: path
-          description: The name of the bridge to update.
-          required: true
-          type: string
-        - name: patch
-          in: body
-          description: >
-            JSON to patch bridge with. It must follow the structure of the
-            bridge type to be patched e.g. `MqInBridgeConfigParam` or 
-            `ObjectStorageOutBridgeConfigParam` although you need only supply
-            the fields which are to be changed. To delete a field, set its value
-            to `null` in the JSON.
-          required: true
-          schema:
-            $ref: '#/definitions/GenericBridgeConfigParam'
-      responses:
-        '200':
-          description: Bridge updated with new parameters.
-        '400':
-          description: >
-            The JSON object describing the merge patch to the bridge is either
-            syntactically invalid, or does not contain one or more of the
-            required fields.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '401':
-          description: >
-            either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '404':
-          description: No bridge exists with the specified bridge name.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '422':
-          description: >
-            Although the request was syntactically valid it was not possible to
-            patch the bridge.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-
-    put:
-      summary: Update all bridge parameters.
+        - APIKeyAuth: []
+        - TokenAuth: []
+        - BasicAuth: []
+      operationId: UpdateTopic
+      summary: >
+        Increase the number of partitions and/or update one or more topic configuration parameters.
       description: >
-        Replaces all the parameters used to configure a bridge with a new set of
-        parameters. The bridge is automatically restarted to pick up the
-        changes.
-      tags:
-        - Bridge
-      security:
-        - X-Auth-Token: []
+        Increase the number of partitions and/or update one or more topic configuration parameters.
+      consumes:
+        - application/json
       parameters:
-        - name: name
-          in: path
-          description: The name of the bridge to update.
-          required: true
-          type: string
-        - name: GenericBridgeConfigParam
-          description: >
-            A new set of configuration parameters to use when modifying an
-            existing instance of the bridge. The actual JSON object used to
-            update the bridge will either be of type `MqInBridgeConfigParam`
-            or `ObjectStorageOutBridgeConfigParam`.
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/GenericBridgeConfigParam'
+        - $ref: '#/parameters/topic_name'
+        - $ref: '#/parameters/topic_update'
       responses:
-        '200':
-          description: Bridge updated with new parameters.
-        '400':
-          description: >
-            The JSON object describing the updates to the bridge is either
-            syntactically invalid, or does not contain one or more of the
-            required fields.
+        202:
+          description: Request was accepted.
+          headers: 
+            X-Global-Transaction-Id:
+              type: string
+              description: >
+                The transaction ID of the request for debugging purpose.
+                If the header is set on the request, it will be honored. If not, it will be generated. 
+                In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
+            Strict-Transport-Security:
+              type: string
+              default: max-age=31536000; includeSubDomains
+              description: > 
+                Specifies a period of time during which the user agent should only access the server using secure HTTPS connections.
+            Cache-Control:
+              type: string 
+              default: no-cache, no-store
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                And the cache should not store anything about the client request or server response.
+            Pragma: 
+              type: string
+              default: no-cache
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                Same as 'Cache-Control: no-cache'. It is used for backwards compatibility with HTTP/1.0.
           schema:
-            $ref: '#/definitions/ErrorInfo'
-        '401':
-          description: >
-            Either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '404':
-          description: No bridge exists with the specified bridge name.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '422':
-          description: >
-            Although the request was syntactically valid, it was not possible to
-            create the bridge. For more information, consult the value of the
-            `errorMessage` property in the JSON object return as the response
-            body.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
+            $ref: '#/definitions/empty'
+        400:
+          $ref: '#/responses/bad_request'
+        401:
+          $ref: '#/responses/unauthorized'
+        403:
+          $ref: '#/responses/forbidden'
+        404:
+          $ref: '#/responses/not_found'
+        422:
+          $ref: '#/responses/unprocessable_entity'
+        503:
+          $ref: '#/responses/service_unavailable'  
 
-  /admin/bridges/{name}/pause:
-
-    post:
-      summary: Pause a bridge.
-      description: >
-        Suspend all processing done by a bridge. Pausing an already paused
-        bridge has no effect and returns a successful status code.
-      tags:
-        - Bridge
+  /admin/topics/{topic_name}/records:
+    #==========================================
+    # DELETE /admin/topics/{topic_name}/records
+    #==========================================
+    delete:
       security:
-        - X-Auth-Token: []
+        - APIKeyAuth: []
+        - TokenAuth: []
+        - BasicAuth: []
+      operationId: DeleteTopicRecords
+      summary: Delete records before the given offset on a topic.
+      description: Delete records before the given offset on a topic.
+      consumes:
+        - application/json
       parameters:
-        - name: name
-          in: path
-          description: The name of the bridge to pause.
-          required: true
-          type: string
+        - $ref: '#/parameters/topic_name'
+        - $ref: '#/parameters/records_delete'
       responses:
-        '204':
-          description: The bridge is paused.
-        '401':
-          description: >
-            Either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
+        202:
+          description: Request was accepted.
+          headers: 
+            X-Global-Transaction-Id:
+              type: string
+              description: >
+                The transaction ID of the request for debugging purpose.
+                If the header is set on the request, it will be honored. If not, it will be generated. 
+                In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
+            Strict-Transport-Security:
+              type: string
+              default: max-age=31536000; includeSubDomains
+              description: > 
+                Specifies a period of time during which the user agent should only access the server using secure HTTPS connections.
+            Cache-Control:
+              type: string 
+              default: no-cache, no-store
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                And the cache should not store anything about the client request or server response.
+            Pragma: 
+              type: string
+              default: no-cache
+              description: >
+                Forces caches to submit the request to the origin server for validation before releasing a cached copy.
+                Same as 'Cache-Control: no-cache'. It is used for backwards compatibility with HTTP/1.0.
           schema:
-            $ref: '#/definitions/ErrorInfo'
-        '404':
-          description: No bridge exists with the specified bridge name.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-
-  /admin/bridges/{name}/resume:
-
-    post:
-      summary: Resume a bridge.
-      description: >
-        Resume the processing done by a bridge (reverse the effect of
-        pausing a bridge).  Resuming an already running bridge has no effect
-        and returns a successful status code.
-      tags:
-        - Bridge
-      security:
-        - X-Auth-Token: []
-      parameters:
-        - name: name
-          in: path
-          description: The name of the bridge to resume.
-          required: true
-          type: string
-      responses:
-        '204':
-          description: The bridge is no longer paused.
-        '401':
-          description: >
-            Either no `X-Auth-Token` header was specified, or the value of the
-            `X-Auth-Token` header is not a valid API key that can be used to
-            successfully authenticate with the Event Streams Bluemix service.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-        '404':
-          description: No bridge exists with the specified bridge name.
-          schema:
-            $ref: '#/definitions/ErrorInfo'
-
+            $ref: '#/definitions/empty'
+        400:
+          $ref: '#/responses/bad_request'
+        401:
+          $ref: '#/responses/unauthorized'
+        403:
+          $ref: '#/responses/forbidden'
+        404:
+          $ref: '#/responses/not_found'
+        422:
+          $ref: '#/responses/unprocessable_entity'
+        503:
+          $ref: '#/responses/service_unavailable'
+  
 definitions:
+  empty:
+    type: object
+    description: Expected empty response could be {}.
+  
+  error:
+    type: object
+    properties:
+      error_code:
+        type: integer
+        description: The 3-digits http status code plus 2-digits kafka error code.
+      message:
+        type: string
+        description: The error message.
+      incident_id:
+        type: string
+        description: The incident ID of the error.
 
-  TopicInfo:
-    required:
-      - name
-      - retentionMs
-      - markedForDeletion
-      - partitions
+  topic_create_request:
+    type: object
     properties:
       name:
         type: string
-        description: The name of the Kafka topic.
-      retentionMs:
-        type: integer
-        description: >
-          The retention period for the topic (in milliseconds). Messages are
-          stored on the topic for this period of time, after which they are
-          deleted.
-      markedForDeletion:
-        type: boolean
-        description: >
-          Set to true when a request has been made to delete the topic, but the
-          deletion process has not yet completed. Kafka implements topic
-          deletion as an asynchronous process.
+        description: The name of topic to be created. 
       partitions:
         type: integer
-        description: The number of Kafka partitions allocated to the topic.
-
-  ErrorInfo:
-    required:
-      - errorCode
-    properties:
-      errorCode:
+        format: int64
+        description: The number of partitions.
+      partition_count:
         type: integer
-        description: Detailed error code qualifying response status code.
-      errorMessage:
+        format: int64
+        description: The number of partitions, this field takes precedence over 'partitions'. Default value is 1 if not specified.
+        default: 1
+        minimum: 1
+        maximum: 1000
+      configs:
+        type: array
+        description: The config properties to be set for the new topic.
+        items:
+          $ref: '#/definitions/config_create'
+  
+  config_create:
+    type: object
+    properties:
+      name:
         type: string
-        description: An English language description of the error.
+        description: The name of the config property.     
+      value:
+        type: string
+        description: The value for a config property.    
 
-  TopicCreateParam:
-    required:
-       - name
+  config_update:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the config property. 
+        value:
+          type: string
+          description: The value for a config property.   
+        reset_to_default:
+          type: boolean
+          description: When true, the value of the config property is reset to its default value.      
+
+  topic_update_request:
+    type: object
+    properties:
+      new_total_partition_count:
+        type: integer
+        format: int32
+        description: The new partition number to be increased.
+      configs:
+        type: array
+        description: >
+          The config properties to be updated for the topic.
+          Valid config keys are 'cleanup.policy', 'retention.ms', 'retention.bytes', 'segment.bytes', 'segment.ms', 'segment.index.bytes'.
+        items:
+          $ref: '#/definitions/config_update'
+  
+  topic_list:
+    description:  A list of 'topic_detail' is returned.
+    type: array
+    items:
+      $ref: '#/definitions/topic_detail'
+  
+  topic_detail:
+    type: object
     properties:
       name:
         type: string
         description: The name of the topic.
-      configs:
-        type: object
-        description: Topic configuration parameters.
-        properties:
-          retentionMs:
-            type: integer
-            description: >
-              The amount of time messages are retained before they are deleted,
-              which is counted in milliseconds (in multiples of hours). This is
-              set per topic. Default is 24 hours. Minimum is 1 hour. Maximum is
-              30 days.
-            default: 86400000   # 24 hours
-            minimum: 3600000    # 1 hour
-            maximum: 2592000000 # 30 days
       partitions:
         type: integer
-        description: >
-          The number of partitions to assign to the topic.
-        minimum: 1
-        maximum: 100
-        default: 1
+        description: The number of partitions. 
       replicationFactor:
         type: integer
-        description: >
-          The replication factor for this topic. This must be set to the value
-          3.
-        default: 3
-        minimum: 3
-        maximum: 3
-
-  BridgeInfo:
-    required:
-      - configuration
-      - state
+        description: The number of replication factor. 
+      retentionMs:
+        type: integer
+        description: The value of config property 'retention.ms'.
+      cleanupPolicy:
+        type: string
+        description: The value of config property 'cleanup.policy'.
+      configs:
+        type: array
+        description: The config properties of the topic.
+        items:
+          $ref: '#/definitions/topic_configs'
+      replicaAssignments:
+        type: array
+        description: The replia assignment of the topic.
+        items:
+          $ref: '#/definitions/replica_assignment'
+    
+  topic_configs:
+    type: object
     properties:
-      configuration:
-        $ref: '#/definitions/GenericBridgeConfigParam'
-      state:
-        required:
-          - value
-          - message
+      retention.bytes:
+        type: string
+        description: The value of config property 'retention.bytes'.
+      segment.bytes:
+        type: string
+        description: The value of config property 'segment.bytes'.
+      segment.index.bytes:
+        type: string
+        description: The value of config property 'segment.index.bytes'.
+      segment.ms:
+        type: string
+        description: The value of config property 'segment.ms'.
+
+  replica_assignment:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: The ID of the partition.
+      brokers:
         type: object
-        description: The runtime state of the bridge.
         properties:
-          value:
-            type: string
-            description: An enumeration representing the state of the bridge.
-            enum:
-              - paused
-              - running
-              - unavailable
-          message:
-            type: string
-            description: >
-              An English language message providing details about the status of
-              the bridge.
-
-  GenericBridgeConfigParam:
-    discriminator: type
-    required:
-      - name
-      - topic
-      - type
-    description: Properties common to all types of bridge.
+          replicas:
+            type: array
+            items:
+              type: integer
+              description: The IDs of replicas of the partition.
+  
+  partition_delete_records:
+    type: object
     properties:
-      name:
-        type: string
-        description: The name of the bridge.
-      topic:
-        type: string
-        description: >
-          The Kafka topic that the bridge will produce messages to, or consume
-          messages from.
-      type:
-        type: string
-        description: >
-          Type of bridge. This is used to determine whether the JSON object is
-          actually of type `MqInBridgeConfigParm` or
-          `ObjectStorageOutBridgeConfigParam`.
-        enum:
-          - mqIn
-          - objectStorageOut
+      records_to_delete:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/record_to_delete'
+  
+  record_to_delete:
+    type: object
+    properties:
+      partition:
+        type: integer
+        format: int32
+        description: The number of partitions.
+      before_offset:
+        type: integer
+        format: int64
+        description: The offset number before which records to be deleted.
 
-
-  MqInBridgeConfigParam:
-    description:
-      Configuration for creating and updating instances of a type of bridge
-      which can be used to transfer data from IBM MQ to Event Streams Kafka.
-    allOf:
-      - $ref: '#/definitions/GenericBridgeConfigParam'
-      - type: object
-        description: >
-          Properties specific to the MQ bridge.
-        required:
-          - configuration
-        properties:
-          configuration:
-            type: object
-            required:
-              - channel
-              - endpoints
-              - key
-              - queue
-              - queueManager
-              - reliability
-            properties:
-              channel:
-                type: string
-                description: >
-                  The name of the MQ channel to use when connecting to the MQ
-                  queue manager.
-              endpoints:
-                type: array
-                description: >
-                  An array of endpoints to use when connecting to the queue
-                  manager. For example: `["qm1.example.com:1414"]`. Multiple
-                  values can be specified when connecting to an MQ
-                  multi-instance queue manager.
-                items:
-                  - type: string
-              key:
-                type: string
-                description: >
-                  Determines how the bridge will assign MQ messages to Kafka
-                  topic partitions. A value of `default` will use the default
-                  Kafka assignment (which is round-robin style distribution).
-                  A value of `correlationId` will forward all messages with the
-                  same `MQMD.CorrelId` field to the same Kafka partition. A
-                  value of `groupId` will forward all messages with the same
-                  `MQMD.GroupId` field to the same Kafka partition.
-                enum:
-                  - default
-                  - correlationId
-                  - groupId
-              password:
-                type: string
-                description: >
-                  The password that the bridge will supply when it connects to
-                  the MQ queue manager.
-              queue:
-                type: string
-                description: >
-                  The name of the MQ queue that the bridge will receive messages
-                  from.
-              queueManager:
-                type: string
-                description: >
-                  The name of the MQ queue manager that the bridge will connect
-                  to.
-              reliability:
-                type: string
-                description: Must be the value `atLeastOnce`.
-                enum:
-                  - atLeastOnce
-              userId:
-                type: string
-                description: >
-                  The user identifier that the bridge will supply when it
-                  connects to the MQ queue manager
-
-  ObjectStorageOutConfigParam:
+# Descriptions of common parameters
+parameters:
+  topic_filter:
+    name: topic_filter
+    in: query
+    required: false
+    type: string
     description: >
-      Configuration for creating and updating instances of a type of bridge
-      which can be used to transfer Event Streams data to an instance of the
-      Bluemix Object Storage service.
-    allOf:
-      - $ref: '#/definitions/GenericBridgeConfigParam'
-      - type: object
-        description: >
-          Properties specific to the Object Storage bridge.
-        required:
-          - configuration
-        properties:
-          configuration:
-            type: object
-            description: >
-              Configuration that is used to connect to the Bluemix Object
-              Storage service and also determine how the bridge converts Kafka
-              messages into Object Storage service files.
-            required:
-              - credentials
-              - container
-              - partitioning
-              - uploadDurationThresholdSeconds
-              - uploadSizeThresholdKB
-            properties:
-              credentials:
-                type: object
-                description: >
-                  The credentials used to connect to the Object Storage service.
-                required:
-                  - authUrl
-                  - region
-                  - password
-                  - projectId
-                  - userId
-                properties:
-                  authUrl:
-                    type: string
-                    description: >
-                      The `auth_url` property from the Object Storage service
-                      credentials.
-                  region:
-                    type: string
-                    description: >
-                      The `region` property from the Object Storage service
-                      credentials.
-                  password:
-                    type: string
-                    description: >
-                      The `password` property from the Object Storage service
-                      credentials.
-                  projectId:
-                    type: string
-                    description: >
-                      The `projectId` property from the Object Storage service
-                      credentials.
-                  userId:
-                    type: string
-                    description: >
-                      The `userId` property from the Object Storage service
-                      credentials.
-              container:
-                type: string
-                description: >
-                  The name of the Object Storage service container into which
-                  this bridge will upload files.
-              uploadDurationThresholdSeconds:
-                type: integer
-                description: >
-                  The maximum amount of time (in seconds) that this bridge will
-                  cache data read from Kafka before the bridge uploads the data
-                  as a file to the Object Storage service.
-                minimum: 10
-                maximum: 21600   # 6 hours
-              uploadSizeThresholdKB:
-                type: integer
-                description: >
-                  The maximum amount of data (in kilobytes) that this bridge
-                  will read from Kafka and cache before the bridge uploads the
-                  data as a file to the Object Storage service.
-                minimum: 1
-                maximum: 1048576 # 1GB
-              inputFormat:
-                type: string
-                description: >
-                  The data format for the contents of the Kafka messages.
-                enum:
-                  - json
-              partitioning:
-                type: array
-                description: >
-                  An ordered array of partitioning schemes. These determine how
-                  Kafka message data is placed into Object Storage service files
-                  as well as the file names used.
-                items:
-                  $ref: '#/definitions/BasePartitioningType'
+        A filter to be applied to the topic names. A simple filter can be specified as
+        a string with asterisk (`*`) wildcards representing 0 or more characters, e.g.
+        `topic-name*` will filter all topic names that begin with the string `topic-name`
+        followed by any character sequence. A more complex filter pattern can be used
+        by surrounding a regular expression in forward slash (`/`) delimiters, e.g.
+        `/topic-name.* /`.
+    
+  per_page:  
+    name: per_page
+    in: query
+    required: false
+    type: integer
+    description: The number of topic names to be returns.
+    
+  page:  
+    name: page
+    in: query
+    required: false
+    type: integer
+    description: >
+      The page number to be returned. The number 1 represents the first page. The default value is 1.
 
-  BasePartitioningType:
-    discriminator: type
-    required:
-      - type
-    properties:
-      type:
-        type: string
-        description: >
-          The type of partitioning scheme to use. `dateIso8601` uses a value
-          parsed from the JSON in the source Kafka messages to determine the
-          Object Storage file name. `kafkaOffset` uses the offset within the
-          Kafka partition to determine the file name.
-        enum:
-          - dateIso8601
-          - kafkaOffset
+  topic_create:
+    name: topic_create
+    in: body
+    required: true       
+    description: The new topic to be created. 
+    schema:
+      $ref: '#/definitions/topic_create_request'
 
-  DateIso8601PartitioningType:
-    allOf:
-      - $ref: '#/definitions/BasePartitioningType'
-      - type: object
-        required:
-          - propertyName
-        properties:
-          propertyName:
-            type: string
-            description: >
-              The name of a JSON property, present in the source Kafka messages,
-              that contains an ISO 8601 date. This date value will be used to
-              partition message data into Object Storage files.
+  topic_name:
+    name: topic_name
+    in: path
+    type: string
+    required: true
+    description: The topic name for the topic to be listed.
 
+  topic_update:
+    name: topic_update
+    in: body
+    required: true
+    description: The new partition number or the configurations to be updated for the topic.
+    schema:
+      $ref: '#/definitions/topic_update_request'
+  
+  records_delete:
+    name: records_delete
+    in: body
+    required: true
+    description: The records in which partition and before which offset to be deleted.
+    schema:
+      $ref: '#/definitions/partition_delete_records'  
+  
+# Descriptions of common responses
+responses:
+  service_unavailable:
+    description: Service was unavailable.
+    schema: 
+      $ref: '#/definitions/error'
+
+  not_found:
+    description: The requested resource was not found.
+    schema: 
+      $ref: '#/definitions/error'
+  
+  unauthorized:
+    description: Authentication information was missing or bad.
+    schema:
+      $ref: '#/definitions/error'
+  
+  forbidden:
+    description: Not authorized to perform the operation.
+    schema:
+      $ref: '#/definitions/error'
+  
+  bad_request:
+    description: The request body was invalid JSON.
+    schema:
+      $ref: '#/definitions/error'
+  
+  unprocessable_entity:
+    description: The server was not able to process the request body.
+    schema:
+      $ref: '#/definitions/error'
