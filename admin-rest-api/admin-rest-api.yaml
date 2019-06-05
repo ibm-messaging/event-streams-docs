@@ -42,8 +42,7 @@ securityDefinitions:
     description: >
       To use basic authentication, the HTTP header name is `Authorization`, value is 
       `Basic <base64 encoded value of username:password>.
-      For enterprise plan, user name is `token`, password is API key. For standard plan, user
-      name is tenant ID, password is API key. 
+      For both enterprise and standard plan, user name is `token`, password is API key.
 
 schemes: 
   - https

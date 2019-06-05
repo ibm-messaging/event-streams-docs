@@ -7,7 +7,7 @@
 # Event Streams Administration REST API
 
 This REST API allows users of the
-[IBM Event Streams service](https://console.bluemix.net/docs/services/EventStreams/index.html)
+[IBM Event Streams service](https://cloud.ibm.com/docs/services/EventStreams/index.html)
 to administer
 [Kafka topics](#using-the-rest-api-to-administer-kafka-topics)
 and [bridges](#using-the-rest-api-to-administer-bridges) associated with an
@@ -38,9 +38,6 @@ can be obtained in a number of ways:
     User Interface and choosing the "Service Credentials" tab.
   - Using the `bluemix` command line tool and specifying the
     `service service-key` command.
-
-In all cases the API key will be a 48 character string consisting of a random
-mixture of upper-case letters, lower-case letters, and numbers.
 
 If you do not specify an API key when making a request to the API, or you
 specify an API key which is not valid then the request will fail with a HTTP

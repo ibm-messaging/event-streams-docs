@@ -20,17 +20,14 @@ operations:
   
 The Admin REST API is also [documented using swagger](./admin-rest-api.yaml).
 
-Note: This Admin REST API works with both Enterprise plan and Standard plan. The Admin REST API that works with Classic plan is located in [here](../admin-rest-api(classic plan only)). They are compatible in topic management capabilities.
+Note: This Admin REST API works with both Enterprise plan and Standard plan. The Admin REST API that works with Classic plan is located in [here](../admin-rest-api-classic-plan-only). They are compatible in topic management capabilities.
 
 ## Access control
 All requests support below authorization methods:
  * Basic authorization with user and password. (
-  For enterprise plan, User is 'token', password is the API key from `ibmcloud resource service-keys` for the service instance.
-  For standard plan, User is tenant ID, password is the API key from `ibmcloud resource service-keys` for the service instance. Tenant ID is the first segment in the host name of Administration API endpoint and is a 16 character string.)
+  For both standard and enterprise plan, user is 'token', password is the API key from `ibmcloud resource service-keys` for the service instance.)
  * Bearer authorization with bearer token. (This token can be either API key or JWT token obtained from IAM upon login to IBM Cloud. Use `ibmcloud iam oauth-tokens` to retrieve the token after `ibmcloud login`)
  * `X-Auth-Token` header to be set to the API key. This header is deprecated.
-
-In all cases the API key will be a 48 character string consisting of a random mixture of upper-case letters, lower-case letters, and numbers.
 
 ##  Administration API endpoint
 Administration API endpoint is the `kafka_admin_url` property in the service key for the service instance. This command can be used to retrieve this property.
