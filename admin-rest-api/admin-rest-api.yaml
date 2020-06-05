@@ -453,10 +453,7 @@ definitions:
         type: string
         description: The value of config property 'cleanup.policy'.
       configs:
-        type: array
-        description: The config properties of the topic.
-        items:
-          $ref: '#/definitions/topic_configs'
+        $ref: '#/definitions/topic_configs'
       replicaAssignments:
         type: array
         description: The replia assignment of the topic.
@@ -466,9 +463,18 @@ definitions:
   topic_configs:
     type: object
     properties:
+      cleanup.policy:
+        type: string
+        description: The value of config property 'cleanup.policy'.
+      min.insync.replicas:
+        type: string
+        description: The value of config property 'min.insync.replicas'
       retention.bytes:
         type: string
         description: The value of config property 'retention.bytes'.
+      retention.ms:
+        type: string
+        description: The value of config property 'retention.ms'
       segment.bytes:
         type: string
         description: The value of config property 'segment.bytes'.
