@@ -17,6 +17,8 @@ operations:
   - [Get a Kafka topic](#getting-a-kafka-topic)
   - [Delete a Kafka topic](#deleting-a-kafka-topic)
   - [Update a Kafka topic configuration](#updating-kafka-topics-configuration)
+  - [List which topics are mirrored](#list-current-mirroring-topic-selection)
+  - [Replace selection of topics which are mirrored](#replace-mirroring-topic-selection)
   
 The Admin REST API is also [documented using swagger](./admin-rest-api.yaml).
 
@@ -251,4 +253,58 @@ Expected status codes
 The following curl command updates a topic called `MYTOPIC`, set its `partitions` to 4 and its `cleanup.policy` to be `compact`.
 ```bash
 curl -i -X PATCH -H 'Content-Type: application/json' -H 'Authorization: Bearer ${TOKEN}' --data '{"new_total_partition_count": 4,"configs":[{"name":"cleanup.policy","value":"compact"}]}' ${ADMIN_URL}/admin/topics/MYTOPIC
+```
+
+### List current mirroring topic selection
+
+Mirroring user controls are available on the target cluster in a mirroring configuration. 
+
+To get the current topic selection, issue an `GET` request to `/admin/mirroring/topic-selection`
+
+Expected status codes
+  - 200: Retrieved topic selection successfully in following format:
+```json
+{
+  "includes": [
+    "^prefix1_.*",
+    "^prefix2_.*"
+  ]
+}
+```
+  - 403: Unauthorized to use mirroring user controls. 
+  - 404: Mirroring not enabled. The mirroring user control apis are only available on a target in a pair of clusters with mirroring enabled between them.
+  - 503: An error occurred handling the request.
+
+#### Example
+The following curl command lists the current mirroring topic selection.
+```bash
+curl -i -X GET -H 'Authorization: Bearer ${TOKEN}' ${ADMIN_URL}/admin/mirroring/topic-selection
+```
+
+### Replace mirroring topic selection
+
+Mirroring user controls are available on the target cluster in a mirroring configuration.
+
+To replace the current topic selection, issue a `POST` request to `/admin/mirroring/topic-selection`
+
+Expected status codes
+  - 200: Replaced topic selection successfully. The new selection is returned in following format:
+```json
+{
+  "includes": [
+    "^prefix1_.*",
+    "^prefix2_.*"
+  ]
+}
+```
+  - 400: Invalid request. The request data cannot be parsed and used to replace the topic selection.
+  - 403: Unauthorized to use mirroring user controls. 
+  - 404: Mirroring not enabled. The mirroring user control apis are only available on a target in a pair of clusters with mirroring enabled between them.
+  - 415: Unsupported media type. Content-Type header with application/json is required.
+  - 503: An error occurred handling the request.
+
+#### Example
+The following curl command replaces the current mirroring topic selection.
+```bash
+curl -i -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer ${TOKEN}' -d '{"includes":["^prefix1_.*","^prefix2_.*"]}'${ADMIN_URL}/admin/mirroring/topic-selection
 ```
