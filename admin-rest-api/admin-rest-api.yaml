@@ -346,7 +346,77 @@ paths:
         422:
           $ref: '#/responses/unprocessable_entity'
         503:
-          $ref: '#/responses/service_unavailable'  
+          $ref: '#/responses/service_unavailable'
+
+  '/admin/mirroring/topic-selection':
+    #=====================================
+    # GET /admin/mirroring/topic-selection
+    #=====================================
+    get:
+      security:
+        - APIKeyAuth: []
+        - TokenAuth: []
+        - BasicAuth: []
+      operationId: GetMirroringTopicSelection
+      summary: Get current topic selection for mirroring.
+      description: Get current topic selection for mirroring.
+      parameters: []
+      responses:
+        200:
+          description: Returns topic selections as patterns.
+          headers:
+            X-Global-Transaction-Id:
+              type: string
+              description: >
+                The transaction ID of the request for debugging purpose.
+                If the header is set on the request, it will be honored. If not, it will be generated.
+                In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
+          schema:
+            $ref: '#/definitions/mirroring_topic_selection'
+        400:
+          $ref: '#/responses/bad_request'
+        401:
+          $ref: '#/responses/unauthorized'
+        403:
+          $ref: '#/responses/forbidden'
+        503:
+          $ref: '#/responses/service_unavailable'
+
+    #=====================================
+    # POST /admin/mirroring/topic-selection
+    #=====================================
+    post:
+      security:
+        - APIKeyAuth: []
+        - TokenAuth: []
+        - BasicAuth: []
+      operationId: ReplaceMirroringTopicSelection
+      summary: Replace topic selection for mirroring.
+      description: Replace topic selection for mirroring. This operation replaces the complete set of mirroring topic selections.
+      parameters:
+        - $ref: '#/parameters/mirroring_topic_selection_replacement'
+      responses:
+        200:
+          description: Returns new topic selections as patterns.
+          headers:
+            X-Global-Transaction-Id:
+              type: string
+              description: >
+                The transaction ID of the request for debugging purpose.
+                If the header is set on the request, it will be honored. If not, it will be generated.
+                In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
+          schema:
+            $ref: '#/definitions/topic_selection_patterns'
+        400:
+          $ref: '#/responses/bad_request'
+        401:
+          $ref: '#/responses/unauthorized'
+        403:
+          $ref: '#/responses/forbidden'
+        415:
+          $ref: '#/responses/unsupported_media_type'
+        503:
+          $ref: '#/responses/service_unavailable'
 
   
 definitions:
@@ -499,7 +569,25 @@ definitions:
             items:
               type: integer
               description: The IDs of replicas of the partition.
-  
+
+  topic_selection_pattern:
+    type: string
+    description: Mirroring topic selection pattern.
+
+  topic_selection_patterns:
+    type: array
+    description: Mirroring topic selection patterns.
+    items:
+      $ref: '#/definitions/topic_selection_pattern'
+
+  mirroring_topic_selection:
+    type: object
+    description: Mirroring topic selection payload.
+    properties:
+      includes:
+        type: array
+        items:
+          $ref: '#/definitions/topic_selection_patterns'
 
 # Descriptions of common parameters
 parameters:
@@ -553,6 +641,14 @@ parameters:
     description: The new partition number or the configurations to be updated for the topic.
     schema:
       $ref: '#/definitions/topic_update_request'
+
+  mirroring_topic_selection_replacement:
+    name: mirroring_topic_selection_replacement
+    in: body
+    required: true
+    description: Topic selection patterns for mirroring.
+    schema:
+      $ref: '#/definitions/mirroring_topic_selection'
   
 # Descriptions of common responses
 responses:
@@ -583,5 +679,10 @@ responses:
   
   unprocessable_entity:
     description: The server was not able to process the request body.
+    schema:
+      $ref: '#/definitions/error'
+
+  unsupported_media_type:
+    description: Unsupported Content-Type provided.
     schema:
       $ref: '#/definitions/error'
