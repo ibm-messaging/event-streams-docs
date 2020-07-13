@@ -1,0 +1,745 @@
+###############################################################################
+# Licensed Materials - Property of IBM
+#
+# 5725-U33, 5737-H33
+#
+# (C) Copyright IBM Corp. 2020  All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+###############################################################################
+openapi: 3.0.0
+info:
+  title: IBM Event Streams Schema Registry
+  description: "
+    IBM Event Streams schema registry management REST API
+    <p>
+    This specification describes a REST API, provided by the
+    <a href=\"https://cloud.ibm.com/docs/EventStreams/index.html\">
+      IBM Cloud Event Streams</a> service.
+    <p>
+    Access to this API requires an IAM Bearer Token to be presented through
+    bearer authentication or an IAM API Key to be presented as the password in
+    basic authentication.
+    <p>
+    The API exposes the following resources:
+    <ul>
+      <li><strong>schemas</strong> - a collection of one or more schema
+                  versions that are used to describe the data stored on a Kafka
+                  topic. As the applications that produce and consume this data
+                  evolve, so will the schemas used to describe the contents of
+                  each message on the topic. It may be the case that the data
+                  stored in Kafka uses several versions of a schema to describe
+                  its content. The schema registry
+                  helps manage this complexity.</li>
+      <li><strong>schema versions</strong> - one particular version of a
+                  schema. Each schema version corresponds to an Avro schema
+                  that describes the encoding of message data.</li>
+      <li><strong>schema rules</strong> - are used to place constraints on
+                  whether it is valid to add a new schema version to the schema
+                  versions that already comprise a schema. For example: schema
+                  rules can be used to enforce that data encoded using a new
+                  version of a schema version can still be understood by
+                  applications that are using an older version of the schema.
+                  </li>
+      <li><strong>global rules</strong> - provide the default rules to use if a
+                  particular schema has not being configured with its own
+                  schema
+                  rule.</li>
+    </ul>
+    <p>
+    The registry supports enforcing the following compatibility requirements
+    between the different versions of a schema:
+    <table border=\"1\">
+    <tr><th>Compatibility Rule</th><th>Tested against</th><th>Description</th>
+        </tr>
+    <tr><td>NONE</td>
+        <td>N/A</td>
+        <td>No compatibility checking is performed when a new schema version
+            is created</td></tr>
+    <tr><td>BACKWARD</td>
+        <td>Latest version of the schema</td>
+        <td rowspan=\"2\">A new version of the schema can omit fields that are
+            present in the existing version of the schema.<br>
+            A new version of the schema can add optional fields that are not
+            present in the existing version of the schema.</td></tr>
+    <tr><td>BACKWARD_TRANSITIVE</td>
+        <td>All versions of the schema</td></tr>
+    <tr><td>FORWARD</td>
+        <td>Latest version of the schema</td>
+        <td rowspan=\"2\">A new version of the schema can add fields that are
+            not present in the existing version of the schema.<br>
+            A new version of the schema can omit optional fields that are
+            present in the existing version of the schema.</td></tr>
+    <tr><td>FORWARD_TRANSITIVE</td>
+        <td>All versions of the schema</td></tr>
+    <tr><td>FULL</td>
+        <td>Latest version of the schema</td>
+        <td rowspan=\"2\">A new version of the schema can add optional fields
+            that are not present in the existing version of the schema.</br>
+            A new version of the schema can omit optional fields that are
+            present in the existing version of the schema.</td></tr>
+    <tr><td>FULL_TRANSITIVE</td>
+        <td>All versions of the schema</td></tr>
+    </table>
+    "
+  version: 1.0.0
+security:
+  - BearerAuth: []
+  - BasicAuth: []
+paths:
+  /artifacts:
+    get:
+      tags:
+      - schemas
+      summary: List schema IDs
+      description: Returns an array containing the schema IDs of all of the
+        schemas that are stored in the registry.
+      responses:
+        200:
+          description: The list schema IDs request was successful. The response
+            body is a JSON array containing a list of schema IDs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: Schema ID
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+
+    post:
+      tags:
+      - schemas
+      parameters:
+        - in: header
+          name: X-Registry-ArtifactId
+          schema:
+            type: string
+          required: false
+          description: The name to assign to the new schema. This must be
+            unique. If this value is not specified then a UUID is used.
+      summary: Create a new schema
+      description: Create a new schema and populate it with an initial schema
+        version containing the AVRO document in the request body.
+      requestBody:
+        description: The AVRO schema to use as the first version of this new
+          schema.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/avroSchema'
+
+      responses:
+        200:
+          description: The schema was successfully created. Information about
+            the newly created schema is included in the response body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemaMetadata'
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        409:
+          description: A schema with the specified schema ID already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+  /artifacts/{id}:
+    delete:
+      tags:
+      - schemas
+      summary: Delete a schema
+      description: Deletes a schema and all of its versions from the schema
+        registry.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: The ID of the schema to delete.
+      responses:
+        204:
+          description: The schema was successfully deleted from the registry.
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        404:
+          $ref: '#/components/responses/schemaIDNotFound'
+
+    get:
+      tags:
+      - schemas
+      summary: Get the latest version of a schema
+      description: Retrieves the lastest version of the specified schema.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: The ID of a schema. The latest version of this schema will
+          be returned in the response body.
+      responses:
+        200:
+          description: The latest version of the schema was successfully
+            retrieved. This schema version is included in the response body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/avroSchema'
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        404:
+          $ref: '#/components/responses/schemaIDNotFound'
+
+  /artifacts/{id}/versions:
+    get:
+      tags:
+      - schema versions
+      summary: List the versions of a schema
+      description: Returns an array containing the version numbers of all of
+        the versions of the specified schema.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: The schema ID for which the list of versions will be
+          returned.
+      responses:
+        200:
+          description: The request to list the versions of a schema was
+            successful. The body of the response contains an array of schema
+            version numbers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  description: Schema version number
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        404:
+          $ref: '#/components/responses/schemaIDNotFound'
+
+    post:
+      tags:
+      - schema versions
+      summary: Create a new schema version
+      description: Creates a new version of a schema using the AVRO schema
+        supplied in the request body.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: A schema ID. This identifies the schema for which a new
+          version will be created.
+      requestBody:
+        description: The AVRO schema to use for the new schema version.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/avroSchema'
+      responses:
+        200:
+          description: The new schema version was successfully created.
+            Information about the newly created schema is returned in the
+            response body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/schemaMetadata'
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        404:
+          $ref: '#/components/responses/schemaIDNotFound'
+        409:
+          description: Either the schema already has the maximum number of
+            permitted versions, or creating a new schema version would fail
+            the required compatibility checks based on existing versions of the
+            schema. Consult the error information returned in the response body
+            for details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+  /artifacts/{id}/versions/{version}:
+    delete:
+      tags:
+      - schema versions
+      summary: Delete a version of the schema
+      description: Delete a version of the schema. If this was the only version
+        of the schema then the whole schema will be deleted.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: A schema ID that identifies the schema to delete a version
+          from.
+      - in: path
+        name: version
+        schema:
+          type: integer
+        required: true
+        description: The schema version number to delete.
+      responses:
+        204:
+          description: The schema version was successfully deleted.
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        404:
+          $ref: '#/components/responses/schemaIDOrVersionNotFound'
+
+    get:
+      tags:
+      - schema versions
+      summary: Get a version of the schema
+      description: Retrieve a particular version of the schema.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: The schema ID identifying which schema to return a version
+          from.
+      - in: path
+        name: version
+        schema:
+          type: integer
+        required: true
+        description: The version number that identifies the particular schema
+          version to return.
+      responses:
+        200:
+          description: The AVRO schema corresponding to the requested schema
+            version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/avroSchema'
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        404:
+          $ref: '#/components/responses/schemaIDOrVersionNotFound'
+
+  /artifacts/{id}/rules:
+    post:
+      tags:
+      - schema rules
+      summary: Create a schema rule
+      description: Create a new rule that controls compatibility checks for a
+        particular schema. Schema rules override the registries global
+        compatibility rule setting.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: The ID of the schema that the rule is to be associated
+          with.
+      requestBody:
+        description: A JSON object representing the schema rule to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/rule'
+      responses:
+        200:
+          description: The schema rule was created successfully. The value of
+            the schema rule is returned in the body of the response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rule'
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        404:
+          $ref: '#/components/responses/schemaIDNotFound'
+        409:
+          description: A schema rule with the same type already exists for this
+             schema. Use the REST request that specifies the `PUT` verb to a
+             path of `/artifacts/{id}/rules/{rule}` to update the rule.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+  /artifacts/{id}/rules/{rule}:
+    delete:
+      tags:
+      - schema rules
+      summary: Delete a schema rule
+      description: Delete a rule that controls compatibility checks for a
+        particular schema. After this operation completes the schema will be
+        subject to compatibility checking defined by the global compatibility
+        rule setting for the registry.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: The ID of the schema that the rule is to be deleted from.
+      - in: path
+        name: rule
+        schema:
+          type: string
+          enum:
+          - COMPATIBILITY
+        required: true
+        description: The type of rule to delete. Currently only the value that
+          can be specified is `COMPATIBILITY`.
+      responses:
+        204:
+          description: The schema rule was successfully deleted.
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        404:
+          $ref: '#/components/responses/schemaIDOrSchemaRuleNotFound'
+
+    get:
+      tags:
+      - schema rules
+      summary: Get a schema rule configuration
+      description: Retrieves the current configuration for a schema rule. If a
+        schema rule exists then it overrides the corresponding global rule that
+        would otherwise be applied.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: The ID of the schema to retrieve the rule for.
+      - in: path
+        name: rule
+        schema:
+          type: string
+          enum:
+          - COMPATIBILITY
+        required: true
+        description: The type of rule to retrieve. Currently only the value
+          that can be specified is `COMPATIBILITY`.
+      responses:
+        200:
+          description: The schema rule was successfully retrieved. The value of
+            the schema rule is returned in the body of the response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rule'
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        404:
+          $ref: '#/components/responses/schemaIDOrSchemaRuleNotFound'
+
+    put:
+      tags:
+      - schema rules
+      summary: Update the configuration of a schema rule.
+      description: Updates the configuration of an existing schema rule. The
+        updated rule will be applied to the specified schema, overriding the
+        value set for the corresponding global rule.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: The ID of the schema for which to update the rule
+          configuration.
+      - in: path
+        name: rule
+        schema:
+          type: string
+          enum:
+          - COMPATIBILITY
+        required: true
+        description: The type of rule to update. Currently only the value that
+          can be specified is `COMPATIBILITY`.
+      requestBody:
+        description: A JSON object representing the updated values to use for
+          the schema rule.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/rule'
+      responses:
+        200:
+          description: The schema rule was successfully retrieved. The value of
+            the schema rule is returned in the body of the response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rule'
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+        409:
+          description: This schema does not have a rule of the specified type.
+            Use the REST request that specifies the `POST` verb to a path of
+            `/artifacts/{id}/rules` to create a schema rule.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+  /rules/{rule}:
+    get:
+      tags:
+      - global rules
+      summary: Retrieve the configuration for a global rule.
+      description: Retrieves the configuration for the specified global rule.
+        The value of the global rule is used as the _default_ when a schema
+        does not have a corresponding schema compatibility rule defined.
+      parameters:
+      - in: path
+        name: rule
+        schema:
+          type: string
+          enum:
+          - COMPATIBILITY
+        required: true
+        description: The type of the global rule to retrieve. Currently only
+          `COMPATIBILITY` is supported.
+      responses:
+        200:
+          description: The global rule was successfully retrieved. The value of
+            the global rule is returned in the body of the response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rule'
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+
+    put:
+      tags:
+      - global rules
+      summary: Update the configuration for a global rule
+      description: Update the configuration for the specified global rule.
+        The value of the global rule is used as the _default_ when a schema
+        does not have a corresponding schema compatibility rule defined.
+      parameters:
+      - in: path
+        name: rule
+        schema:
+          type: string
+          enum:
+          - COMPATIBILITY
+        required: true
+        description: The type of the global rule to update. Currently only
+          `COMPATIBILITY` is supported.
+      responses:
+        200:
+          description: The global rule was successfully updated. The new value
+            for the global rule is returned in the body of the response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rule'
+        400:
+          $ref: '#/components/responses/badRequest'
+        403:
+          $ref: '#/components/responses/forbidden'
+
+components:
+  responses:
+    badRequest:
+      description: The request was not valid. Consult the error information
+        returned in the response body for details.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    forbidden:
+      description: The client is not authorized to perform this request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    schemaIDNotFound:
+      description: The registry does not contain a schema with the specified
+        schema ID.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    schemaIDOrSchemaRuleNotFound:
+      description: Either the registry does not contain a schema with the
+        specified schema ID, or the schema is not configured with the specified
+        type of rule.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    schemaIDOrVersionNotFound:
+      description: Either the registry does not contain a schema with the
+        specified schema ID, or the schema identified by the schema ID does
+        not contain a version corresponding to the specified version number.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+    BasicAuth:
+      type: http
+      scheme: basic
+
+  schemas:
+    avroSchema:
+      example: {
+        "type": "record",
+        "name": "book",
+        "fields" : [
+          {"name": "title", "type": "string"},
+          {"name": "author", "type": "string"}
+        ]
+      }
+
+    rule:
+      required:
+      - type
+      - config
+      type: object
+      description: Rules define constraints on whether the schema registry will
+        accept a new version of a schema.
+      properties:
+        type:
+          type: string
+          enum:
+          - COMPATIBILITY
+          description: The type of the rule. Currently only one type is
+            supported (`COMPATIBILITY`). 
+        config:
+          oneOf:
+          - $ref: '#/components/schemas/compatibilityRuleConfig'
+          description: The configuration value for the rule. Which values are
+            valid depends on the value of this object's `type` property.
+      example: {
+        "type": "COMPATIBILITY",
+        "config": "BACKWARD"
+      }
+
+    compatibilityRuleConfig:
+      type: string
+      enum:
+      - BACKWARD
+      - BACKWARD_TRANSITIVE
+      - FORWARD
+      - FORWARD_TRANSITIVE
+      - FULL
+      - FULL_TRANSITIVE
+      - NONE
+      description: Valid values for the `config` property of a compatibility
+        rule.
+
+    schemaMetadata:
+      required:
+      - createdOn
+      - globalId
+      - id
+      - modifiedOn
+      - type
+      - version
+      type: object
+      description: Information about a schema version.
+      properties:
+        createdOn:
+          type: integer
+          description:  Creation timestamp of the schema in UNIX epoc format.
+        globalId:
+          type: integer
+          description: Globally unique ID assigned to the initial version of
+            the schema.
+        id:
+          type: string
+          description: The ID of the schema. This is either taken from the
+            `X-Registry-ArtifactId` header when the request is made to create
+            the schema or is an automatically assigned UUID value.
+        modifiedOn:
+          type: integer
+          description: Last modification timestamp of the schema in UNIX epoc
+            format.
+        type:
+          type: string
+          description: Type of the schema. Always the string `AVRO`.
+        version:
+          type: integer
+          description: Version number assigned to this version of the schema.
+      example: {
+        "id":"my-schema",
+        "type":"AVRO",
+        "version":1,
+        "createdOn":1579267788258,
+        "modifiedOn":1579267788258,
+        "globalId":75
+      }
+
+    error:
+      required:
+      - error_code
+      - message
+      properties:
+        error_code:
+          type: integer
+          description: HTTP Status code of the response.
+        message:
+          type: string
+          description: Error message.
+        incident:
+          type: string
+          description: Optional incident ID. IBM support can use this to
+            correlate the error response with the underlying cause.
+      example: {
+        "error_code": 404,
+        "message": "No schema with ID 1234 was found in the registry"
+      }
+
