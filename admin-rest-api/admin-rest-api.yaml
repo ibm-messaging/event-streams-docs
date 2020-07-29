@@ -373,8 +373,6 @@ paths:
                 In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
           schema:
             $ref: '#/definitions/mirroring_topic_selection'
-        400:
-          $ref: '#/responses/bad_request'
         401:
           $ref: '#/responses/unauthorized'
         403:
@@ -418,7 +416,40 @@ paths:
         503:
           $ref: '#/responses/service_unavailable'
 
-  
+  '/admin/mirroring/active-topics':
+    #=====================================
+    # GET /admin/mirroring/active-topics
+    #=====================================
+    get:
+      security:
+        - APIKeyAuth: []
+        - TokenAuth: []
+        - BasicAuth: []
+      operationId: GetMirroringActiveTopics
+      summary: Get topics that are being actively mirrored.
+      description: Get topics that are being actively mirrored.
+      parameters: []
+      responses:
+        200:
+          description: Return topics that are being actively mirrored.
+          headers:
+            X-Global-Transaction-Id:
+              type: string
+              description: >
+                The transaction ID of the request for debugging purpose.
+                If the header is set on the request, it will be honored. If not, it will be generated.
+                In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
+          schema:
+            $ref: '#/definitions/mirroring_active_topics'
+        401:
+          $ref: '#/responses/unauthorized'
+        403:
+          $ref: '#/responses/forbidden'
+        404:
+          $ref: '#/responses/not_found'
+        503:
+          $ref: '#/responses/service_unavailable'
+
 definitions:
   empty:
     type: object
@@ -582,6 +613,19 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/topic_selection_pattern'
+
+  active_topic:
+    type: string
+    description: Active mirroring topic.
+
+  mirroring_active_topics:
+    type: object
+    description: Topics that are being actively mirrored.
+    properties:
+      active_topics:
+        type: array
+        items:
+          $ref: '#/definitions/active_topic'
 
 # Descriptions of common parameters
 parameters:

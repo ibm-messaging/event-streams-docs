@@ -255,9 +255,11 @@ The following curl command updates a topic called `MYTOPIC`, set its `partitions
 curl -i -X PATCH -H 'Content-Type: application/json' -H 'Authorization: Bearer ${TOKEN}' --data '{"new_total_partition_count": 4,"configs":[{"name":"cleanup.policy","value":"compact"}]}' ${ADMIN_URL}/admin/topics/MYTOPIC
 ```
 
+## Using the REST API to configure mirroring
+
 ### List current mirroring topic selection
 
-Mirroring user controls are available on the target cluster in a mirroring configuration. 
+Mirroring user controls are available on the target cluster in a mirroring environment.
 
 To get the current topic selection, issue an `GET` request to `/admin/mirroring/topic-selection`
 
@@ -271,7 +273,7 @@ Expected status codes
   ]
 }
 ```
-  - 403: Unauthorized to use mirroring user controls. 
+  - 403: Unauthorized to use mirroring user controls.
   - 404: Mirroring not enabled. The mirroring user control apis are only available on a target in a pair of clusters with mirroring enabled between them.
   - 503: An error occurred handling the request.
 
@@ -283,7 +285,7 @@ curl -i -X GET -H 'Authorization: Bearer ${TOKEN}' ${ADMIN_URL}/admin/mirroring/
 
 ### Replace mirroring topic selection
 
-Mirroring user controls are available on the target cluster in a mirroring configuration.
+Mirroring user controls are available on the target cluster in a mirroring environment.
 
 To replace the current topic selection, issue a `POST` request to `/admin/mirroring/topic-selection`
 
@@ -298,7 +300,7 @@ Expected status codes
 }
 ```
   - 400: Invalid request. The request data cannot be parsed and used to replace the topic selection.
-  - 403: Unauthorized to use mirroring user controls. 
+  - 403: Unauthorized to use mirroring user controls.
   - 404: Mirroring not enabled. The mirroring user control apis are only available on a target in a pair of clusters with mirroring enabled between them.
   - 415: Unsupported media type. Content-Type header with application/json is required.
   - 503: An error occurred handling the request.
@@ -307,4 +309,30 @@ Expected status codes
 The following curl command replaces the current mirroring topic selection.
 ```bash
 curl -i -X POST -H 'Content-Type: application/json' -H 'Authorization: Bearer ${TOKEN}' -d '{"includes":["^prefix1_.*","^prefix2_.*"]}'${ADMIN_URL}/admin/mirroring/topic-selection
+```
+
+### List active mirroring topics
+
+Mirroring user controls are available on the target cluster in a mirroring environment.
+
+To get the list of currently mirrored topics, issue an `GET` request to `/admin/mirroring/active-topics`
+
+Expected status codes
+  - 200: Retrieved active topics successfully in following format:
+```json
+{
+  "active_topics": [
+    "topic1",
+    "topic2"
+  ]
+}
+```
+  - 403: Unauthorized to use mirroring user controls.
+  - 404: Mirroring not enabled. The mirroring user control apis are only available on a target in a pair of clusters with mirroring enabled between them.
+  - 503: An error occurred handling the request.
+
+#### Example
+The following curl command lists the current currently mirrored topics.
+```bash
+curl -i -X GET -H 'Authorization: Bearer ${TOKEN}' ${ADMIN_URL}/admin/mirroring/active-topics
 ```
