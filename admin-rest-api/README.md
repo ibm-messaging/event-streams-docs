@@ -19,6 +19,7 @@ operations:
   - [Update a Kafka topic configuration](#updating-kafka-topics-configuration)
   - [List which topics are mirrored](#list-current-mirroring-topic-selection)
   - [Replace selection of topics which are mirrored](#replace-mirroring-topic-selection)
+  - [List active mirroring topics](#list-active-mirroring-topics)
   
 The Admin REST API is also [documented using swagger](./admin-rest-api.yaml).
 
