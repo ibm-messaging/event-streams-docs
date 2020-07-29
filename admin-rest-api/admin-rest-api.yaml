@@ -406,7 +406,7 @@ paths:
                 If the header is set on the request, it will be honored. If not, it will be generated.
                 In the event of a non-200 error return code, the transaction ID is also returned in the JSON error response as 'incident_id'.
           schema:
-            $ref: '#/definitions/topic_selection_patterns'
+            $ref: '#/definitions/mirroring_topic_selection'
         400:
           $ref: '#/responses/bad_request'
         401:
@@ -574,12 +574,6 @@ definitions:
     type: string
     description: Mirroring topic selection pattern.
 
-  topic_selection_patterns:
-    type: array
-    description: Mirroring topic selection patterns.
-    items:
-      $ref: '#/definitions/topic_selection_pattern'
-
   mirroring_topic_selection:
     type: object
     description: Mirroring topic selection payload.
@@ -587,7 +581,7 @@ definitions:
       includes:
         type: array
         items:
-          $ref: '#/definitions/topic_selection_patterns'
+          $ref: '#/definitions/topic_selection_pattern'
 
 # Descriptions of common parameters
 parameters:
